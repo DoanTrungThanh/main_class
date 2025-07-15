@@ -193,152 +193,154 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: settings.colors.primary }}>
-                <GraduationCap size={24} className="text-white" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="p-1.5 sm:p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: settings.colors.primary }}>
+                <GraduationCap size={18} className="text-white sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">{settings.centerName}</h1>
-                <p className="text-xs text-gray-600">{settings.centerSlogan}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-sm sm:text-xl font-bold text-gray-900 truncate">{settings.centerName}</h1>
+                <p className="text-xs text-gray-600 truncate hidden sm:block">{settings.centerSlogan}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
               <button
                 onClick={() => setShowActivityReport(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2"
+                className="bg-green-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg hover:bg-green-700 transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <FileText size={18} />
-                Báo cáo hoạt động sự kiện
+                <FileText size={14} className="sm:w-4 sm:h-4" />
+                <span className="hidden md:inline">Báo cáo hoạt động sự kiện</span>
+                <span className="md:hidden">Báo cáo</span>
               </button>
               <button
                 onClick={onLoginClick}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                className="bg-blue-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               >
-                <LogIn size={16} />
-                Đăng nhập
+                <LogIn size={14} className="sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Đăng nhập</span>
+                <span className="sm:hidden">Login</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Statistics Section */}
-      <section className="pt-8 pb-12 px-4 sm:px-6 lg:px-8 bg-white">
+      {/* Statistics Section - Mobile Optimized */}
+      <section className="pt-6 sm:pt-8 pb-8 sm:pb-12 px-3 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Thống kê trung tâm</h2>
-            <p className="text-gray-600">Những con số ấn tượng về hoạt động của chúng tôi</p>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Thống kê trung tâm</h2>
+            <p className="text-sm sm:text-base text-gray-600">Những con số ấn tượng về hoạt động của chúng tôi</p>
           </div>
 
-          {/* Main Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">Tổng số lớp học</p>
-                  <p className="text-3xl font-bold text-blue-900">{stats.totalClasses}</p>
-                  <p className="text-xs text-blue-600 mt-1">Đang hoạt động</p>
+          {/* Main Statistics - Mobile Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm font-medium text-blue-600">Tổng số lớp học</p>
+                  <p className="text-xl sm:text-3xl font-bold text-blue-900">{stats.totalClasses}</p>
+                  <p className="text-xs text-blue-600 mt-0.5 sm:mt-1">Đang hoạt động</p>
                 </div>
-                <div className="bg-blue-600 p-3 rounded-lg">
-                  <BookOpen size={24} className="text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">Tổng học viên</p>
-                  <p className="text-3xl font-bold text-green-900">{stats.totalStudents}</p>
-                  <p className="text-xs text-green-600 mt-1">Đã đăng ký</p>
-                </div>
-                <div className="bg-green-600 p-3 rounded-lg">
-                  <Users size={24} className="text-white" />
+                <div className="bg-blue-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
+                  <BookOpen size={16} className="text-white sm:w-6 sm:h-6" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600">Học viên đang học</p>
-                  <p className="text-3xl font-bold text-purple-900">{stats.activeStudents}</p>
-                  <p className="text-xs text-purple-600 mt-1">Đang theo học</p>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm font-medium text-green-600">Tổng học viên</p>
+                  <p className="text-xl sm:text-3xl font-bold text-green-900">{stats.totalStudents}</p>
+                  <p className="text-xs text-green-600 mt-0.5 sm:mt-1">Đã đăng ký</p>
                 </div>
-                <div className="bg-purple-600 p-3 rounded-lg">
-                  <TrendingUp size={24} className="text-white" />
+                <div className="bg-green-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
+                  <Users size={16} className="text-white sm:w-6 sm:h-6" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-600">Độ tuổi trung bình</p>
-                  <p className="text-3xl font-bold text-orange-900">{stats.averageAge}</p>
-                  <p className="text-xs text-orange-600 mt-1">Tuổi</p>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm font-medium text-purple-600">Học viên đang học</p>
+                  <p className="text-xl sm:text-3xl font-bold text-purple-900">{stats.activeStudents}</p>
+                  <p className="text-xs text-purple-600 mt-0.5 sm:mt-1">Đang theo học</p>
                 </div>
-                <div className="bg-orange-600 p-3 rounded-lg">
-                  <Target size={24} className="text-white" />
+                <div className="bg-purple-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
+                  <TrendingUp size={16} className="text-white sm:w-6 sm:h-6" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <p className="text-xs sm:text-sm font-medium text-orange-600">Độ tuổi trung bình</p>
+                  <p className="text-xl sm:text-3xl font-bold text-orange-900">{stats.averageAge}</p>
+                  <p className="text-xs text-orange-600 mt-0.5 sm:mt-1">Tuổi</p>
+                </div>
+                <div className="bg-orange-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
+                  <Target size={16} className="text-white sm:w-6 sm:h-6" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Charts Row - Mobile Optimized */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
             {/* Age Distribution */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <BarChart3 size={20} className="text-blue-600" />
+            <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className="bg-blue-100 p-1.5 sm:p-2 rounded-md sm:rounded-lg">
+                  <BarChart3 size={16} className="text-blue-600 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Phân bố độ tuổi học viên</h3>
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900">Phân bố độ tuổi học viên</h3>
               </div>
 
-              <div className="space-y-3 max-h-80 overflow-y-auto">
+              <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
                 {Object.entries(stats.ageDistribution)
                   .sort(([a], [b]) => parseInt(a) - parseInt(b))
                   .map(([age, count]) => (
                     <div key={age} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">{age} tuổi</span>
-                      <div className="flex items-center gap-3 flex-1 ml-4">
-                        <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 min-w-[2.5rem]">{age} tuổi</span>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 ml-2 sm:ml-4">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2 sm:h-3">
                           <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full"
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 sm:h-3 rounded-full"
                             style={{
                               width: `${(count / Math.max(...Object.values(stats.ageDistribution))) * 100}%`
                             }}
                           ></div>
                         </div>
-                        <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900 w-6 sm:w-8 text-right">
                           {count} HS
                         </span>
                       </div>
                     </div>
                   ))}
                 {Object.keys(stats.ageDistribution).length === 0 && (
-                  <div className="text-center text-gray-500 py-4">
+                  <div className="text-center text-gray-500 py-3 sm:py-4 text-sm">
                     Chưa có dữ liệu độ tuổi
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Time Slot Distribution */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-green-100 p-2 rounded-lg">
-                  <PieChart size={20} className="text-green-600" />
+            {/* Time Slot Distribution - Mobile Optimized */}
+            <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className="bg-green-100 p-1.5 sm:p-2 rounded-md sm:rounded-lg">
+                  <PieChart size={16} className="text-green-600 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Phân bố ca học</h3>
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900">Phân bố ca học</h3>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {Object.entries(stats.timeSlotDistribution).map(([timeSlot, count]) => {
                   const timeSlotNames = {
                     morning: 'Ca Sáng',
@@ -353,19 +355,19 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
 
                   return (
                     <div key={timeSlot} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 min-w-[3rem]">
                         {timeSlotNames[timeSlot as keyof typeof timeSlotNames] || `Ca ${timeSlot}`}
                       </span>
-                      <div className="flex items-center gap-3 flex-1 ml-4">
-                        <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 ml-2 sm:ml-4">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2 sm:h-3">
                           <div
-                            className={`bg-gradient-to-r h-3 rounded-full ${colors[timeSlot as keyof typeof colors] || 'from-gray-500 to-gray-600'}`}
+                            className={`bg-gradient-to-r h-2 sm:h-3 rounded-full ${colors[timeSlot as keyof typeof colors] || 'from-gray-500 to-gray-600'}`}
                             style={{
                               width: `${(count / Math.max(...Object.values(stats.timeSlotDistribution))) * 100}%`
                             }}
                           ></div>
                         </div>
-                        <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900 w-6 sm:w-8 text-right">
                           {count}
                         </span>
                       </div>
@@ -373,7 +375,7 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
                   );
                 })}
                 {Object.keys(stats.timeSlotDistribution).length === 0 && (
-                  <div className="text-center text-gray-500 py-4">
+                  <div className="text-center text-gray-500 py-3 sm:py-4 text-sm">
                     Chưa có dữ liệu ca học
                   </div>
                 )}
@@ -385,25 +387,25 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
         </div>
       </section>
 
-      {/* Schedule Section */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white">
+      {/* Schedule Section - Mobile Optimized */}
+      <section className="py-8 sm:py-12 px-3 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <PublicScheduleView />
         </div>
       </section>
 
-      {/* Gallery Section */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      {/* Gallery Section - Mobile Optimized */}
+      <section className="py-8 sm:py-12 px-3 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Hình ảnh trung tâm</h2>
-            <p className="text-gray-600">Khám phá không gian học tập hiện đại và thân thiện của chúng tôi</p>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Hình ảnh trung tâm</h2>
+            <p className="text-sm sm:text-base text-gray-600">Khám phá không gian học tập hiện đại và thân thiện của chúng tôi</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {settings.gallery.map((item, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <div className="relative h-48 bg-gray-200">
+              <div key={index} className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div className="relative h-32 sm:h-48 bg-gray-200">
                   <img
                     src={item.image}
                     alt={item.title}
@@ -414,9 +416,9 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all duration-300"></div>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.description}</p>
+                <div className="p-3 sm:p-4">
+                  <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 line-clamp-1">{item.title}</h3>
+                  <p className="text-gray-600 text-xs sm:text-sm line-clamp-2">{item.description}</p>
                 </div>
               </div>
             ))}
@@ -424,8 +426,8 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
         </div>
       </section>
 
-      {/* Finance and Assets Section */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white">
+      {/* Finance and Assets Section - Mobile Optimized */}
+      <section className="py-8 sm:py-12 px-3 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <PublicFinanceAndAssets />
         </div>

@@ -22,8 +22,8 @@ export default function PublicFinanceAndAssets() {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-      {/* Tab Navigation */}
+    <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100">
+      {/* Tab Navigation - Mobile Optimized */}
       <div className="border-b border-gray-200">
         <nav className="flex">
           {tabs.map((tab) => {
@@ -32,16 +32,16 @@ export default function PublicFinanceAndAssets() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 px-6 text-sm font-medium transition-all ${
+                className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                <Icon size={18} />
-                <div className="text-left">
+                <Icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <div className="text-center sm:text-left">
                   <div className="font-semibold">{tab.label}</div>
-                  <div className="text-xs opacity-75">{tab.description}</div>
+                  <div className="text-xs opacity-75 hidden sm:block">{tab.description}</div>
                 </div>
               </button>
             );
@@ -49,8 +49,8 @@ export default function PublicFinanceAndAssets() {
         </nav>
       </div>
 
-      {/* Tab Content */}
-      <div className="p-6">
+      {/* Tab Content - Mobile Optimized */}
+      <div className="p-3 sm:p-6">
         {activeTab === 'finance' && <FinancePublicView />}
         {activeTab === 'assets' && <PublicAssetStats />}
       </div>
