@@ -193,134 +193,127 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header - Mobile Optimized */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div className="p-1.5 sm:p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: settings.colors.primary }}>
-                <GraduationCap size={18} className="text-white sm:w-6 sm:h-6" />
+      {/* Header - Mobile Fixed */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-12 sm:h-16">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[60%]">
+              <div className="p-1 sm:p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: settings.colors.primary }}>
+                <GraduationCap size={16} className="text-white sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-sm sm:text-xl font-bold text-gray-900 truncate">{settings.centerName}</h1>
+                <h1 className="text-xs sm:text-xl font-bold text-gray-900 truncate">{settings.centerName}</h1>
                 <p className="text-xs text-gray-600 truncate hidden sm:block">{settings.centerSlogan}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={() => setShowActivityReport(true)}
-                className="bg-green-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg hover:bg-green-700 transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                className="bg-green-600 text-white px-1.5 sm:px-4 py-1 sm:py-2 rounded text-xs sm:text-sm hover:bg-green-700 transition-all flex items-center gap-1"
+                title="Báo cáo hoạt động sự kiện"
               >
-                <FileText size={14} className="sm:w-4 sm:h-4" />
-                <span className="hidden md:inline">Báo cáo hoạt động sự kiện</span>
-                <span className="md:hidden">Báo cáo</span>
+                <FileText size={12} className="sm:w-4 sm:h-4" />
+                <span className="hidden lg:inline">Báo cáo</span>
               </button>
               <button
                 onClick={onLoginClick}
-                className="bg-blue-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg hover:bg-blue-700 transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                className="bg-blue-600 text-white px-1.5 sm:px-4 py-1 sm:py-2 rounded text-xs sm:text-sm hover:bg-blue-700 transition-all flex items-center gap-1"
+                title="Đăng nhập hệ thống"
               >
-                <LogIn size={14} className="sm:w-4 sm:h-4" />
+                <LogIn size={12} className="sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Đăng nhập</span>
-                <span className="sm:hidden">Login</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Statistics Section - Mobile Optimized */}
-      <section className="pt-6 sm:pt-8 pb-8 sm:pb-12 px-3 sm:px-6 lg:px-8 bg-white">
+      {/* Statistics Section - Mobile Fixed */}
+      <section className="pt-4 pb-6 px-2 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-6 sm:mb-12">
-            <h2 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Thống kê trung tâm</h2>
-            <p className="text-sm sm:text-base text-gray-600">Những con số ấn tượng về hoạt động của chúng tôi</p>
+          <div className="text-center mb-4 sm:mb-8">
+            <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-4">Thống kê trung tâm</h2>
+            <p className="text-xs sm:text-base text-gray-600">Những con số ấn tượng về hoạt động của chúng tôi</p>
           </div>
 
-          {/* Main Statistics - Mobile Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div className="mb-2 sm:mb-0">
-                  <p className="text-xs sm:text-sm font-medium text-blue-600">Tổng số lớp học</p>
-                  <p className="text-xl sm:text-3xl font-bold text-blue-900">{stats.totalClasses}</p>
-                  <p className="text-xs text-blue-600 mt-0.5 sm:mt-1">Đang hoạt động</p>
+          {/* Main Statistics - Compact Mobile Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 sm:p-6 rounded-lg">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mb-1">
+                  <BookOpen size={12} className="text-blue-600 sm:w-4 sm:h-4" />
+                  <p className="text-xs sm:text-sm font-medium text-blue-600">Lớp học</p>
                 </div>
-                <div className="bg-blue-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
-                  <BookOpen size={16} className="text-white sm:w-6 sm:h-6" />
-                </div>
+                <p className="text-lg sm:text-3xl font-bold text-blue-900">{stats.totalClasses}</p>
+                <p className="text-xs text-blue-600">Đang hoạt động</p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div className="mb-2 sm:mb-0">
-                  <p className="text-xs sm:text-sm font-medium text-green-600">Tổng học viên</p>
-                  <p className="text-xl sm:text-3xl font-bold text-green-900">{stats.totalStudents}</p>
-                  <p className="text-xs text-green-600 mt-0.5 sm:mt-1">Đã đăng ký</p>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-2 sm:p-6 rounded-lg">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mb-1">
+                  <Users size={12} className="text-green-600 sm:w-4 sm:h-4" />
+                  <p className="text-xs sm:text-sm font-medium text-green-600">Học viên</p>
                 </div>
-                <div className="bg-green-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
-                  <Users size={16} className="text-white sm:w-6 sm:h-6" />
-                </div>
+                <p className="text-lg sm:text-3xl font-bold text-green-900">{stats.totalStudents}</p>
+                <p className="text-xs text-green-600">Đã đăng ký</p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div className="mb-2 sm:mb-0">
-                  <p className="text-xs sm:text-sm font-medium text-purple-600">Học viên đang học</p>
-                  <p className="text-xl sm:text-3xl font-bold text-purple-900">{stats.activeStudents}</p>
-                  <p className="text-xs text-purple-600 mt-0.5 sm:mt-1">Đang theo học</p>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-2 sm:p-6 rounded-lg">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mb-1">
+                  <TrendingUp size={12} className="text-purple-600 sm:w-4 sm:h-4" />
+                  <p className="text-xs sm:text-sm font-medium text-purple-600">Đang học</p>
                 </div>
-                <div className="bg-purple-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
-                  <TrendingUp size={16} className="text-white sm:w-6 sm:h-6" />
-                </div>
+                <p className="text-lg sm:text-3xl font-bold text-purple-900">{stats.activeStudents}</p>
+                <p className="text-xs text-purple-600">Theo học</p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 sm:p-6 rounded-lg sm:rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div className="mb-2 sm:mb-0">
-                  <p className="text-xs sm:text-sm font-medium text-orange-600">Độ tuổi trung bình</p>
-                  <p className="text-xl sm:text-3xl font-bold text-orange-900">{stats.averageAge}</p>
-                  <p className="text-xs text-orange-600 mt-0.5 sm:mt-1">Tuổi</p>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-2 sm:p-6 rounded-lg">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mb-1">
+                  <Target size={12} className="text-orange-600 sm:w-4 sm:h-4" />
+                  <p className="text-xs sm:text-sm font-medium text-orange-600">Tuổi TB</p>
                 </div>
-                <div className="bg-orange-600 p-2 sm:p-3 rounded-md sm:rounded-lg self-end sm:self-auto">
-                  <Target size={16} className="text-white sm:w-6 sm:h-6" />
-                </div>
+                <p className="text-lg sm:text-3xl font-bold text-orange-900">{stats.averageAge}</p>
+                <p className="text-xs text-orange-600">Tuổi</p>
               </div>
             </div>
           </div>
 
-          {/* Charts Row - Mobile Optimized */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+          {/* Charts Row - Compact Mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
             {/* Age Distribution */}
-            <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-blue-100 p-1.5 sm:p-2 rounded-md sm:rounded-lg">
-                  <BarChart3 size={16} className="text-blue-600 sm:w-5 sm:h-5" />
+            <div className="bg-white p-3 sm:p-6 rounded-lg shadow border border-gray-100">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="bg-blue-100 p-1 sm:p-2 rounded">
+                  <BarChart3 size={14} className="text-blue-600 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-sm sm:text-lg font-semibold text-gray-900">Phân bố độ tuổi học viên</h3>
+                <h3 className="text-xs sm:text-lg font-semibold text-gray-900">Phân bố độ tuổi</h3>
               </div>
 
-              <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
+              <div className="space-y-1.5 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
                 {Object.entries(stats.ageDistribution)
                   .sort(([a], [b]) => parseInt(a) - parseInt(b))
                   .map(([age, count]) => (
-                    <div key={age} className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-medium text-gray-700 min-w-[2.5rem]">{age} tuổi</span>
-                      <div className="flex items-center gap-2 sm:gap-3 flex-1 ml-2 sm:ml-4">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2 sm:h-3">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 sm:h-3 rounded-full"
-                            style={{
-                              width: `${(count / Math.max(...Object.values(stats.ageDistribution))) * 100}%`
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-xs sm:text-sm font-semibold text-gray-900 w-6 sm:w-8 text-right">
-                          {count} HS
-                        </span>
+                    <div key={age} className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 w-12 sm:w-16">{age} tuổi</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-1.5 sm:h-3">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 sm:h-3 rounded-full"
+                          style={{
+                            width: `${(count / Math.max(...Object.values(stats.ageDistribution))) * 100}%`
+                          }}
+                        ></div>
                       </div>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900 w-8 text-right">
+                        {count}
+                      </span>
                     </div>
                   ))}
                 {Object.keys(stats.ageDistribution).length === 0 && (
@@ -331,16 +324,16 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
               </div>
             </div>
 
-            {/* Time Slot Distribution - Mobile Optimized */}
-            <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="bg-green-100 p-1.5 sm:p-2 rounded-md sm:rounded-lg">
-                  <PieChart size={16} className="text-green-600 sm:w-5 sm:h-5" />
+            {/* Time Slot Distribution - Compact Mobile */}
+            <div className="bg-white p-3 sm:p-6 rounded-lg shadow border border-gray-100">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="bg-green-100 p-1 sm:p-2 rounded">
+                  <PieChart size={14} className="text-green-600 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-sm sm:text-lg font-semibold text-gray-900">Phân bố ca học</h3>
+                <h3 className="text-xs sm:text-lg font-semibold text-gray-900">Phân bố ca học</h3>
               </div>
 
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-4">
                 {Object.entries(stats.timeSlotDistribution).map(([timeSlot, count]) => {
                   const timeSlotNames = {
                     morning: 'Ca Sáng',
@@ -354,23 +347,21 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
                   };
 
                   return (
-                    <div key={timeSlot} className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-medium text-gray-700 min-w-[3rem]">
+                    <div key={timeSlot} className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 w-16 sm:w-20">
                         {timeSlotNames[timeSlot as keyof typeof timeSlotNames] || `Ca ${timeSlot}`}
                       </span>
-                      <div className="flex items-center gap-2 sm:gap-3 flex-1 ml-2 sm:ml-4">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2 sm:h-3">
-                          <div
-                            className={`bg-gradient-to-r h-2 sm:h-3 rounded-full ${colors[timeSlot as keyof typeof colors] || 'from-gray-500 to-gray-600'}`}
-                            style={{
-                              width: `${(count / Math.max(...Object.values(stats.timeSlotDistribution))) * 100}%`
-                            }}
+                      <div className="flex-1 bg-gray-200 rounded-full h-1.5 sm:h-3">
+                        <div
+                          className={`bg-gradient-to-r h-1.5 sm:h-3 rounded-full ${colors[timeSlot as keyof typeof colors] || 'from-gray-500 to-gray-600'}`}
+                          style={{
+                            width: `${(count / Math.max(...Object.values(stats.timeSlotDistribution))) * 100}%`
+                          }}
                           ></div>
-                        </div>
-                        <span className="text-xs sm:text-sm font-semibold text-gray-900 w-6 sm:w-8 text-right">
-                          {count}
-                        </span>
                       </div>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900 w-8 text-right">
+                        {count}
+                      </span>
                     </div>
                   );
                 })}

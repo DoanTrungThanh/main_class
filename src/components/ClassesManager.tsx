@@ -8,7 +8,6 @@ import {
   Search,
   Edit,
   Trash2,
-  Users,
   User,
   X,
   Save,
@@ -39,7 +38,6 @@ export default function ClassesManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
-  const [isCleaningData, setIsCleaningData] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     teacherId: '',
@@ -71,45 +69,7 @@ export default function ClassesManager() {
     setStudentSearchTerm('');
   };
 
-  // Hàm làm sạch dữ liệu - loại bỏ học sinh không hoạt động khỏi tất cả các lớp
-  const cleanClassData = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn làm sạch dữ liệu lớp học?\n\nViệc này sẽ loại bỏ tất cả học sinh đã nghỉ học khỏi các lớp.')) {
-      return;
-    }
 
-    setIsCleaningData(true);
-    try {
-      let updatedCount = 0;
-
-      for (const cls of classes) {
-        const activeStudentIds = cls.studentIds.filter(studentId => {
-          const student = students.find(s => s.id === studentId);
-          return student && student.status === 'active';
-        });
-
-        // Nếu có sự thay đổi, cập nhật lớp
-        if (activeStudentIds.length !== cls.studentIds.length) {
-          await updateClass(cls.id, {
-            ...cls,
-            studentIds: activeStudentIds
-          });
-          updatedCount++;
-        }
-      }
-
-      if (updatedCount > 0) {
-        toast.success(`Đã làm sạch dữ liệu cho ${updatedCount} lớp học!`);
-        await refreshData();
-      } else {
-        toast.info('Dữ liệu đã sạch, không cần cập nhật!');
-      }
-    } catch (error) {
-      console.error('Error cleaning class data:', error);
-      toast.error('Có lỗi xảy ra khi làm sạch dữ liệu!');
-    } finally {
-      setIsCleaningData(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,15 +301,6 @@ export default function ClassesManager() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={cleanClassData}
-            disabled={isCleaningData}
-            className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-all flex items-center gap-2"
-            title="Loại bỏ học sinh đã nghỉ khỏi tất cả các lớp"
-          >
-            <Users size={20} />
-            {isCleaningData ? 'Đang làm sạch...' : 'Làm sạch dữ liệu'}
-          </button>
-          <button
             onClick={handleExportExcel}
             disabled={isExporting}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2"
@@ -434,7 +385,7 @@ export default function ClassesManager() {
                   </div>
                   
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Users size={16} />
+                    <User size={16} />
                     <span className="text-sm">
                       {students.filter(s => cls.studentIds.includes(s.id) && s.status === 'active').length} học sinh
                     </span>
