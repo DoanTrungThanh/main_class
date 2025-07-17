@@ -102,10 +102,10 @@ export default function ClassInventoryManager() {
 
   // Get inventory statistics
   const getInventoryStats = () => {
-    const totalCategories = categories.length;
-    const totalItems = inventory.length;
-    const totalQuantity = inventory.reduce((sum, item) => sum + item.quantity, 0);
-    const lowStockItems = inventory.filter(item => item.quantity <= 10).length;
+    const totalCategories = inventoryCategories.length;
+    const totalItems = classInventory.length;
+    const totalQuantity = classInventory.reduce((sum, item) => sum + item.quantity, 0);
+    const lowStockItems = classInventory.filter(item => item.quantity <= 10).length;
 
     return { totalCategories, totalItems, totalQuantity, lowStockItems };
   };
@@ -658,7 +658,7 @@ export default function ClassInventoryManager() {
       {showCategoryManager && (
         <InventoryCategoryManager
           onClose={() => setShowCategoryManager(false)}
-          onCategoryAdded={() => loadCategories()}
+          onCategoryAdded={() => refreshData()}
         />
       )}
     </div>
