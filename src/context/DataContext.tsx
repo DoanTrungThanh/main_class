@@ -15,7 +15,11 @@ import {
   gradeBatchesService,
   assetCategoriesService,
   assetDistributionsService,
-  activityReportsService
+  activityReportsService,
+  inventoryCategoriesService,
+  classInventoryService,
+  type ClassInventoryItem,
+  type InventoryCategory
 } from '../lib/supabaseService';
 import { supabase } from '../lib/supabase';
 
@@ -43,6 +47,8 @@ interface DataContextType {
   events: Event[];
   gradeBatches: GradeBatch[];
   activityReports: ActivityReport[];
+  classInventory: ClassInventoryItem[];
+  inventoryCategories: InventoryCategory[];
   loading: boolean;
   error: string | null;
   
@@ -150,6 +156,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [gradeBatches, setGradeBatches] = useState<GradeBatch[]>([]);
   const [activityReports, setActivityReports] = useState<ActivityReport[]>([]);
+  const [classInventory, setClassInventory] = useState<ClassInventoryItem[]>([]);
+  const [inventoryCategories, setInventoryCategories] = useState<InventoryCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -198,6 +206,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         assetDistributionsData,
         financesData,
         activityReportsData,
+        classInventoryData,
+        inventoryCategoriesData,
       ] = await Promise.all([
         studentsService.getAll(),
         classesService.getAll(),
@@ -215,6 +225,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         assetDistributionsService.getAll(),
         loadFinances(),
         loadActivityReports(),
+        classInventoryService.getAll(),
+        inventoryCategoriesService.getAll(),
       ]);
 
       setStudents(studentsData);
@@ -233,6 +245,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setAssetDistributions(assetDistributionsData);
       setFinances(financesData);
       setActivityReports(activityReportsData);
+      setClassInventory(classInventoryData);
+      setInventoryCategories(inventoryCategoriesData);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load data from database');
@@ -1242,6 +1256,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       events,
       gradeBatches,
       activityReports,
+      classInventory,
+      inventoryCategories,
       loading,
       error,
       addStudent,

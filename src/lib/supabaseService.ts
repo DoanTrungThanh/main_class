@@ -18,6 +18,28 @@ import {
   ActivityReport
 } from '../types';
 
+// Class Inventory types
+export interface ClassInventoryItem {
+  id: string;
+  title: string;
+  quantity: number;
+  category_id: string;
+  description?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Notification Template type
 export interface NotificationTemplate {
   id: string;
@@ -2053,6 +2075,158 @@ export const activityReportsService = {
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting activity report:', error);
+      throw error;
+    }
+  },
+};
+
+// Inventory Categories Service
+export const inventoryCategoriesService = {
+  async getAll(): Promise<InventoryCategory[]> {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_categories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching inventory categories:', error);
+      return [];
+    }
+  },
+
+  async create(category: Omit<InventoryCategory, 'id' | 'created_at' | 'updated_at'>): Promise<InventoryCategory> {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_categories')
+        .insert({
+          name: category.name,
+          description: category.description,
+          color: category.color,
+          created_by: category.created_by,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating inventory category:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, updates: Partial<InventoryCategory>): Promise<InventoryCategory> {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_categories')
+        .update({
+          ...(updates.name && { name: updates.name }),
+          ...(updates.description !== undefined && { description: updates.description }),
+          ...(updates.color && { color: updates.color }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating inventory category:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('inventory_categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting inventory category:', error);
+      throw error;
+    }
+  },
+};
+
+// Class Inventory Service
+export const classInventoryService = {
+  async getAll(): Promise<ClassInventoryItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('class_inventory')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching class inventory:', error);
+      return [];
+    }
+  },
+
+  async create(item: Omit<ClassInventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<ClassInventoryItem> {
+    try {
+      const { data, error } = await supabase
+        .from('class_inventory')
+        .insert({
+          title: item.title,
+          quantity: item.quantity,
+          category_id: item.category_id,
+          description: item.description,
+          created_by: item.created_by,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating class inventory item:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, updates: Partial<ClassInventoryItem>): Promise<ClassInventoryItem> {
+    try {
+      const { data, error } = await supabase
+        .from('class_inventory')
+        .update({
+          ...(updates.title && { title: updates.title }),
+          ...(updates.quantity !== undefined && { quantity: updates.quantity }),
+          ...(updates.category_id && { category_id: updates.category_id }),
+          ...(updates.description !== undefined && { description: updates.description }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating class inventory item:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('class_inventory')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting class inventory item:', error);
       throw error;
     }
   },

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToastContext } from '../context/ToastContext';
-import { supabase } from '../lib/supabase';
+import { useData } from '../context/DataContext';
+import { classInventoryService } from '../lib/supabaseService';
 import { hasPermission, getEffectivePermissions } from '../constants/permissions';
 import InventoryCategoryManager from './InventoryCategoryManager';
 import {
@@ -53,11 +54,10 @@ interface InventoryCategory {
 export default function ClassInventoryManager() {
   const { user } = useAuth();
   const toast = useToastContext();
+  const { classInventory, inventoryCategories, refreshData } = useData();
 
   // State management
-  const [inventory, setInventory] = useState<ClassInventoryItem[]>([]);
-  const [categories, setCategories] = useState<InventoryCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingItem, setEditingItem] = useState<ClassInventoryItem | null>(null);
@@ -80,104 +80,14 @@ export default function ClassInventoryManager() {
   const canEdit = hasPermission(userPermissions, 'class-inventory.edit', user?.role);
   const canDelete = hasPermission(userPermissions, 'class-inventory.delete', user?.role);
 
-  // Load data
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Data is now loaded from DataContext, no need for separate loading
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([loadInventory(), loadCategories()]);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const loadInventory = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('class_inventory')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading inventory:', error);
-        // Fallback to mock data
-        const mockData: ClassInventoryItem[] = [
-          {
-            id: '1',
-            title: 'Bút chì',
-            quantity: 50,
-            category_id: '1',
-            description: 'Bút chì 2B cho học sinh',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            title: 'Tẩy',
-            quantity: 30,
-            category_id: '1',
-            description: 'Tẩy trắng',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ];
-        setInventory(mockData);
-      } else {
-        setInventory(data || []);
-      }
-    } catch (error) {
-      console.error('Error loading inventory:', error);
-    }
-  };
 
-  const loadCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('inventory_categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        console.error('Error loading categories:', error);
-        // Fallback to mock data
-        const mockCategories: InventoryCategory[] = [
-          {
-            id: '1',
-            name: 'Văn phòng phẩm',
-            description: 'Bút, giấy, tẩy, thước...',
-            color: '#3B82F6',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'Đồ chơi giáo dục',
-            description: 'Đồ chơi hỗ trợ học tập',
-            color: '#10B981',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ];
-        setCategories(mockCategories);
-      } else {
-        setCategories(data || []);
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    }
-  };
 
   // Filter inventory items
-  const filteredInventory = inventory.filter(item => {
+  const filteredInventory = classInventory.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || item.category_id === selectedCategory;
@@ -186,7 +96,7 @@ export default function ClassInventoryManager() {
 
   // Get category info
   const getCategoryInfo = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
+    const category = inventoryCategories.find(c => c.id === categoryId);
     return category || { name: 'Danh mục không xác định', color: '#6B7280' };
   };
 
@@ -224,7 +134,7 @@ export default function ClassInventoryManager() {
             className="w-full md:w-auto px-2 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Tất cả danh mục</option>
-            {categories.map(category => (
+            {inventoryCategories.map(category => (
               <option key={category.id} value={category.id}>{category.name}</option>
             ))}
           </select>
@@ -374,9 +284,9 @@ export default function ClassInventoryManager() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {categories.length > 0 ? (
-              categories.map((category) => {
-                const itemCount = inventory.filter(item => item.category_id === category.id).length;
+            {inventoryCategories.length > 0 ? (
+              inventoryCategories.map((category) => {
+                const itemCount = classInventory.filter(item => item.category_id === category.id).length;
                 return (
                   <tr key={category.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -446,63 +356,28 @@ export default function ClassInventoryManager() {
 
     try {
       if (editingItem) {
-        // Update existing item
-        const { error } = await supabase
-          .from('class_inventory')
-          .update({
-            title: formData.title,
-            quantity: formData.quantity,
-            category_id: formData.category_id,
-            description: formData.description || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingItem.id);
-
-        if (error) {
-          console.error('Error updating item:', error);
-          // Fallback to local update
-          const updatedItem: ClassInventoryItem = {
-            ...editingItem,
-            ...formData,
-            updated_at: new Date().toISOString()
-          };
-          setInventory(prev => prev.map(item =>
-            item.id === editingItem.id ? updatedItem : item
-          ));
-        } else {
-          await loadInventory();
-        }
+        // Update existing item using service
+        await classInventoryService.update(editingItem.id, {
+          title: formData.title,
+          quantity: formData.quantity,
+          category_id: formData.category_id,
+          description: formData.description || null,
+        });
         toast.success('Cập nhật vật phẩm thành công!');
       } else {
-        // Create new item
-        const newItem = {
+        // Create new item using service
+        await classInventoryService.create({
           title: formData.title,
           quantity: formData.quantity,
           category_id: formData.category_id,
           description: formData.description || null,
           created_by: user?.id || 'unknown'
-        };
-
-        const { error } = await supabase
-          .from('class_inventory')
-          .insert([newItem]);
-
-        if (error) {
-          console.error('Error creating item:', error);
-          // Fallback to local add
-          const localItem: ClassInventoryItem = {
-            id: Date.now().toString(),
-            ...newItem,
-            created_by: user?.id || 'unknown',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          setInventory(prev => [localItem, ...prev]);
-        } else {
-          await loadInventory();
-        }
+        });
         toast.success('Thêm vật phẩm thành công!');
       }
+
+      // Refresh data from DataContext
+      await refreshData();
 
       resetForm();
     } catch (error) {
@@ -542,18 +417,8 @@ export default function ClassInventoryManager() {
     }
 
     try {
-      const { error } = await supabase
-        .from('class_inventory')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting item:', error);
-        // Fallback to local delete
-        setInventory(prev => prev.filter(item => item.id !== id));
-      } else {
-        await loadInventory();
-      }
+      await classInventoryService.delete(id);
+      await refreshData();
       toast.success('Xóa vật phẩm thành công!');
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -749,7 +614,7 @@ export default function ClassInventoryManager() {
                   required
                 >
                   <option value="">Chọn danh mục</option>
-                  {categories.map(category => (
+                  {inventoryCategories.map(category => (
                     <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
                 </select>

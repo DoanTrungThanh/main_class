@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToastContext } from '../context/ToastContext';
-import { supabase } from '../lib/supabase';
+import { useData } from '../context/DataContext';
+import { inventoryCategoriesService } from '../lib/supabaseService';
 import { hasPermission, getEffectivePermissions } from '../constants/permissions';
 import {
   Tag,
@@ -37,10 +38,10 @@ const PRESET_COLORS = [
 export default function InventoryCategoryManager({ onClose, onCategoryAdded }: InventoryCategoryManagerProps) {
   const { user } = useAuth();
   const toast = useToastContext();
+  const { inventoryCategories, refreshData } = useData();
 
   // State management
-  const [categories, setCategories] = useState<InventoryCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<InventoryCategory | null>(null);
 
@@ -57,62 +58,7 @@ export default function InventoryCategoryManager({ onClose, onCategoryAdded }: I
   const canEdit = hasPermission(userPermissions, 'class-inventory.edit', user?.role);
   const canDelete = hasPermission(userPermissions, 'class-inventory.delete', user?.role);
 
-  // Load categories
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('inventory_categories')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading categories:', error);
-        // Fallback to mock data
-        const mockCategories: InventoryCategory[] = [
-          {
-            id: '1',
-            name: 'Văn phòng phẩm',
-            description: 'Bút, giấy, tẩy, thước...',
-            color: '#3B82F6',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'Đồ chơi giáo dục',
-            description: 'Đồ chơi hỗ trợ học tập',
-            color: '#10B981',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '3',
-            name: 'Thiết bị điện tử',
-            description: 'Máy tính, máy chiếu, loa...',
-            color: '#8B5CF6',
-            created_by: user?.id || 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ];
-        setCategories(mockCategories);
-      } else {
-        setCategories(data || []);
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      toast.error('Lỗi khi tải danh mục!');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Data is now loaded from DataContext
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,61 +71,26 @@ export default function InventoryCategoryManager({ onClose, onCategoryAdded }: I
 
     try {
       if (editingCategory) {
-        // Update existing category
-        const { error } = await supabase
-          .from('inventory_categories')
-          .update({
-            name: formData.name,
-            description: formData.description || null,
-            color: formData.color,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingCategory.id);
-
-        if (error) {
-          console.error('Error updating category:', error);
-          // Fallback to local update
-          const updatedCategory: InventoryCategory = {
-            ...editingCategory,
-            ...formData,
-            updated_at: new Date().toISOString()
-          };
-          setCategories(prev => prev.map(cat => 
-            cat.id === editingCategory.id ? updatedCategory : cat
-          ));
-        } else {
-          await loadCategories();
-        }
+        // Update existing category using service
+        await inventoryCategoriesService.update(editingCategory.id, {
+          name: formData.name,
+          description: formData.description || null,
+          color: formData.color,
+        });
         toast.success('Cập nhật danh mục thành công!');
       } else {
-        // Create new category
-        const newCategory = {
+        // Create new category using service
+        await inventoryCategoriesService.create({
           name: formData.name,
           description: formData.description || null,
           color: formData.color,
           created_by: user?.id || 'unknown'
-        };
-
-        const { error } = await supabase
-          .from('inventory_categories')
-          .insert([newCategory]);
-
-        if (error) {
-          console.error('Error creating category:', error);
-          // Fallback to local add
-          const localCategory: InventoryCategory = {
-            id: Date.now().toString(),
-            ...newCategory,
-            created_by: user?.id || 'unknown',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          setCategories(prev => [localCategory, ...prev]);
-        } else {
-          await loadCategories();
-        }
+        });
         toast.success('Thêm danh mục thành công!');
       }
+
+      // Refresh data from DataContext
+      await refreshData();
 
       resetForm();
       if (onCategoryAdded) {
@@ -220,18 +131,8 @@ export default function InventoryCategoryManager({ onClose, onCategoryAdded }: I
     }
 
     try {
-      const { error } = await supabase
-        .from('inventory_categories')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting category:', error);
-        // Fallback to local delete
-        setCategories(prev => prev.filter(cat => cat.id !== id));
-      } else {
-        await loadCategories();
-      }
+      await inventoryCategoriesService.delete(id);
+      await refreshData();
       toast.success('Xóa danh mục thành công!');
       if (onCategoryAdded) {
         onCategoryAdded();
@@ -287,8 +188,8 @@ export default function InventoryCategoryManager({ onClose, onCategoryAdded }: I
 
         {/* Categories List */}
         <div className="space-y-4">
-          {categories.length > 0 ? (
-            categories.map((category) => (
+          {inventoryCategories.length > 0 ? (
+            inventoryCategories.map((category) => (
               <div key={category.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
