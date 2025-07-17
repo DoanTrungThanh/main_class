@@ -73,6 +73,16 @@ export default function ClassInventoryManager() {
     description: ''
   });
 
+  // Helper function to sanitize text input
+  const sanitizeText = (text: string): string => {
+    if (!text) return '';
+    // Remove null bytes and other problematic characters
+    return text
+      .replace(/\u0000/g, '') // Remove null bytes
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+      .trim();
+  };
+
   // Check permissions
   const userPermissions = getEffectivePermissions(user?.permissions || [], user?.role);
   const canView = hasPermission(userPermissions, 'class-inventory.view', user?.role);
@@ -356,12 +366,12 @@ export default function ClassInventoryManager() {
 
     try {
       if (editingItem) {
-        // Update existing item using service
+        // Sanitize and update existing item using service
         await classInventoryService.update(editingItem.id, {
-          title: formData.title,
+          title: sanitizeText(formData.title),
           quantity: formData.quantity,
           category_id: formData.category_id,
-          description: formData.description || null,
+          description: formData.description ? sanitizeText(formData.description) : null,
         });
         toast.success('Cập nhật vật phẩm thành công!');
       } else {
@@ -371,12 +381,12 @@ export default function ClassInventoryManager() {
           return;
         }
 
-        // Create new item using service
+        // Sanitize and create new item using service
         await classInventoryService.create({
-          title: formData.title,
+          title: sanitizeText(formData.title),
           quantity: formData.quantity,
           category_id: formData.category_id,
-          description: formData.description || null,
+          description: formData.description ? sanitizeText(formData.description) : null,
           created_by: user?.id || null
         });
         toast.success('Thêm vật phẩm thành công!');
@@ -588,7 +598,7 @@ export default function ClassInventoryManager() {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: sanitizeText(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Nhập tên vật phẩm"
                   required
@@ -632,7 +642,7 @@ export default function ClassInventoryManager() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: sanitizeText(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
                   placeholder="Mô tả chi tiết về vật phẩm"
