@@ -365,13 +365,19 @@ export default function ClassInventoryManager() {
         });
         toast.success('Cập nhật vật phẩm thành công!');
       } else {
+        // Validate required fields
+        if (!formData.category_id || formData.category_id.trim() === '') {
+          toast.error('Vui lòng chọn danh mục!');
+          return;
+        }
+
         // Create new item using service
         await classInventoryService.create({
           title: formData.title,
           quantity: formData.quantity,
           category_id: formData.category_id,
           description: formData.description || null,
-          created_by: user?.id || 'unknown'
+          created_by: user?.id || null
         });
         toast.success('Thêm vật phẩm thành công!');
       }
