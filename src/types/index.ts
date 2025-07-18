@@ -246,3 +246,25 @@ export interface ActivityReport {
   tags?: string[];
 }
 
+// Class Inventory types
+export interface InventoryCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClassInventoryItem {
+  id: string;
+  title: string;
+  quantity: number;
+  category_id: string;
+  description?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+

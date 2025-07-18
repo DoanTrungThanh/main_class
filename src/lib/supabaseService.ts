@@ -15,7 +15,9 @@ import {
   GradeBatch,
   AssetCategory,
   AssetDistribution,
-  ActivityReport
+  ActivityReport,
+  ClassInventoryItem,
+  InventoryCategory
 } from '../types';
 
 // Class Inventory types
@@ -2174,22 +2176,38 @@ export const classInventoryService = {
 
   async create(item: Omit<ClassInventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<ClassInventoryItem> {
     try {
+      console.log('🔍 Creating inventory item with data:', item);
+
+      // Validate required fields
+      if (!item.title || !item.category_id) {
+        throw new Error('Title and category_id are required');
+      }
+
+      const insertData = {
+        title: item.title,
+        quantity: item.quantity || 1,
+        category_id: item.category_id,
+        description: item.description || null,
+        created_by: item.created_by || null,
+      };
+
+      console.log('📤 Sending to Supabase:', insertData);
+
       const { data, error } = await supabase
         .from('class_inventory')
-        .insert({
-          title: item.title,
-          quantity: item.quantity,
-          category_id: item.category_id,
-          description: item.description,
-          created_by: item.created_by,
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Created successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error creating class inventory item:', error);
+      console.error('💥 Error creating class inventory item:', error);
       throw error;
     }
   },

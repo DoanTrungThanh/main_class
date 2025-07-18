@@ -365,40 +365,68 @@ export default function ClassInventoryManager() {
     }
 
     try {
+      console.log('🔍 Form submission started');
+      console.log('📝 Form data:', formData);
+      console.log('👤 User:', user);
+
       if (editingItem) {
-        // Sanitize and update existing item using service
-        await classInventoryService.update(editingItem.id, {
+        console.log('✏️ Updating existing item:', editingItem.id);
+
+        const updateData = {
           title: sanitizeText(formData.title),
           quantity: formData.quantity,
           category_id: formData.category_id,
           description: formData.description ? sanitizeText(formData.description) : null,
-        });
+        };
+
+        console.log('📤 Update data:', updateData);
+
+        // Sanitize and update existing item using service
+        await classInventoryService.update(editingItem.id, updateData);
         toast.success('Cập nhật vật phẩm thành công!');
       } else {
+        console.log('➕ Creating new item');
+
         // Validate required fields
         if (!formData.category_id || formData.category_id.trim() === '') {
+          console.log('❌ No category selected');
           toast.error('Vui lòng chọn danh mục!');
           return;
         }
 
-        // Sanitize and create new item using service
-        await classInventoryService.create({
+        const createData = {
           title: sanitizeText(formData.title),
           quantity: formData.quantity,
           category_id: formData.category_id,
           description: formData.description ? sanitizeText(formData.description) : null,
           created_by: user?.id || null
-        });
+        };
+
+        console.log('📤 Create data:', createData);
+
+        // Sanitize and create new item using service
+        const result = await classInventoryService.create(createData);
+        console.log('✅ Create result:', result);
         toast.success('Thêm vật phẩm thành công!');
       }
 
+      console.log('🔄 Refreshing data...');
       // Refresh data from DataContext
       await refreshData();
 
+      console.log('🧹 Resetting form...');
       resetForm();
+      console.log('✅ Form submission completed');
     } catch (error) {
-      console.error('Error saving item:', error);
-      toast.error('Lỗi khi lưu vật phẩm!');
+      console.error('💥 Error saving item:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
+      toast.error(`Lỗi khi lưu vật phẩm: ${error.message}`);
     }
   };
 
