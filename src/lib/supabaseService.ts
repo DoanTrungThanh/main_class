@@ -17,7 +17,11 @@ import {
   AssetDistribution,
   ActivityReport,
   ClassInventoryItem,
-  InventoryCategory
+  InventoryCategory,
+  BigEvent,
+  EventVolunteer,
+  EventGroup,
+  EventSponsor
 } from '../types';
 
 // Class Inventory types
@@ -2101,18 +2105,30 @@ export const inventoryCategoriesService = {
 
   async create(category: Omit<InventoryCategory, 'id' | 'created_at' | 'updated_at'>): Promise<InventoryCategory> {
     try {
+      console.log('🔍 Creating inventory category with data:', category);
+
+      // Không cần tạo ID vì database sẽ tự động tạo UUID
+      const insertData = {
+        name: category.name,
+        description: category.description || null,
+        color: category.color,
+        created_by: category.created_by || null, // Cho phép null vì database schema cho phép
+      };
+
+      console.log('📤 Sending to Supabase:', insertData);
+
       const { data, error } = await supabase
         .from('inventory_categories')
-        .insert({
-          name: category.name,
-          description: category.description,
-          color: category.color,
-          created_by: category.created_by,
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Created successfully:', data);
       return data;
     } catch (error) {
       console.error('Error creating inventory category:', error);
@@ -2174,7 +2190,7 @@ export const classInventoryService = {
     }
   },
 
-  async create(item: Omit<ClassInventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<ClassInventoryItem> {
+  async create(item: Omit<ClassInventoryItem, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<ClassInventoryItem> {
     try {
       console.log('🔍 Creating inventory item with data:', item);
 
@@ -2188,7 +2204,7 @@ export const classInventoryService = {
         quantity: item.quantity || 1,
         category_id: item.category_id,
         description: item.description || null,
-        created_by: item.created_by || null,
+        // Không gửi created_by vì database mong đợi UUID nhưng user.id là custom format
       };
 
       console.log('📤 Sending to Supabase:', insertData);
@@ -2245,6 +2261,548 @@ export const classInventoryService = {
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting class inventory item:', error);
+      throw error;
+    }
+  },
+};
+
+// Big Events Service
+export const bigEventsService = {
+  async getAll(): Promise<BigEvent[]> {
+    try {
+      const { data, error } = await supabase
+        .from('big_events')
+        .select(`
+          *,
+          event_volunteers(*),
+          event_groups(*),
+          event_sponsors(*)
+        `)
+        .order('event_date', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(event => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        eventDate: event.event_date,
+        startTime: event.start_time,
+        endTime: event.end_time,
+        location: event.location,
+        status: event.status,
+        organizerId: event.organizer_id,
+        createdAt: event.created_at,
+        eventVolunteers: event.event_volunteers || [],
+        eventGroups: event.event_groups || [],
+        sponsors: event.event_sponsors || [],
+      }));
+    } catch (error) {
+      console.error('Error fetching big events:', error);
+      return [];
+    }
+  },
+
+  async create(eventData: Omit<BigEvent, 'id' | 'createdAt' | 'eventVolunteers' | 'eventGroups' | 'sponsors'>): Promise<BigEvent> {
+    try {
+      const { data, error } = await supabase
+        .from('big_events')
+        .insert({
+          id: generateId('bev_'),
+          name: eventData.name,
+          description: eventData.description,
+          event_date: eventData.eventDate,
+          start_time: eventData.startTime,
+          end_time: eventData.endTime,
+          location: eventData.location,
+          status: eventData.status,
+          organizer_id: eventData.organizerId,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        eventDate: data.event_date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        location: data.location,
+        status: data.status,
+        organizerId: data.organizer_id,
+        createdAt: data.created_at,
+        eventVolunteers: [],
+        eventGroups: [],
+        sponsors: [],
+      };
+    } catch (error) {
+      console.error('Error creating big event:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, eventData: Partial<BigEvent>): Promise<BigEvent> {
+    try {
+      const updateData: any = {};
+      if (eventData.name) updateData.name = eventData.name;
+      if (eventData.description !== undefined) updateData.description = eventData.description;
+      if (eventData.eventDate) updateData.event_date = eventData.eventDate;
+      if (eventData.startTime) updateData.start_time = eventData.startTime;
+      if (eventData.endTime) updateData.end_time = eventData.endTime;
+      if (eventData.location !== undefined) updateData.location = eventData.location;
+      if (eventData.status) updateData.status = eventData.status;
+
+      const { data, error } = await supabase
+        .from('big_events')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        eventDate: data.event_date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        location: data.location,
+        status: data.status,
+        organizerId: data.organizer_id,
+        createdAt: data.created_at,
+        eventVolunteers: [],
+        eventGroups: [],
+        sponsors: [],
+      };
+    } catch (error) {
+      console.error('Error updating big event:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('big_events')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting big event:', error);
+      throw error;
+    }
+  },
+};
+
+// Event Volunteers Service
+export const eventVolunteersService = {
+  async getByEventId(bigEventId: string): Promise<EventVolunteer[]> {
+    try {
+      const { data, error } = await supabase
+        .from('event_volunteers')
+        .select('*')
+        .eq('big_event_id', bigEventId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(volunteer => ({
+        id: volunteer.id,
+        bigEventId: volunteer.big_event_id,
+        name: volunteer.name,
+        phone: volunteer.phone,
+        email: volunteer.email,
+        role: volunteer.role,
+        notes: volunteer.notes,
+        isSystemUser: volunteer.is_system_user,
+        systemUserId: volunteer.system_user_id,
+        createdAt: volunteer.created_at,
+      }));
+    } catch (error) {
+      console.error('Error fetching event volunteers:', error);
+      return [];
+    }
+  },
+
+  async create(volunteerData: Omit<EventVolunteer, 'id' | 'createdAt'>): Promise<EventVolunteer> {
+    try {
+      const { data, error } = await supabase
+        .from('event_volunteers')
+        .insert({
+          id: generateId('evol_'),
+          big_event_id: volunteerData.bigEventId,
+          name: volunteerData.name,
+          phone: volunteerData.phone,
+          email: volunteerData.email,
+          role: volunteerData.role,
+          notes: volunteerData.notes,
+          is_system_user: volunteerData.isSystemUser,
+          system_user_id: volunteerData.systemUserId,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        role: data.role,
+        notes: data.notes,
+        isSystemUser: data.is_system_user,
+        systemUserId: data.system_user_id,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error creating event volunteer:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, volunteerData: Partial<EventVolunteer>): Promise<EventVolunteer> {
+    try {
+      const updateData: any = {};
+      if (volunteerData.name) updateData.name = volunteerData.name;
+      if (volunteerData.phone !== undefined) updateData.phone = volunteerData.phone;
+      if (volunteerData.email !== undefined) updateData.email = volunteerData.email;
+      if (volunteerData.role !== undefined) updateData.role = volunteerData.role;
+      if (volunteerData.notes !== undefined) updateData.notes = volunteerData.notes;
+
+      const { data, error } = await supabase
+        .from('event_volunteers')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        role: data.role,
+        notes: data.notes,
+        isSystemUser: data.is_system_user,
+        systemUserId: data.system_user_id,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error updating event volunteer:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('event_volunteers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting event volunteer:', error);
+      throw error;
+    }
+  },
+};
+
+// Event Groups Service
+export const eventGroupsService = {
+  async getByEventId(bigEventId: string): Promise<EventGroup[]> {
+    try {
+      const { data, error } = await supabase
+        .from('event_groups')
+        .select('*')
+        .eq('big_event_id', bigEventId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(group => ({
+        id: group.id,
+        bigEventId: group.big_event_id,
+        name: group.name,
+        description: group.description,
+        leaderId: group.leader_id,
+        memberIds: group.member_ids || [],
+        createdAt: group.created_at,
+      }));
+    } catch (error) {
+      console.error('Error fetching event groups:', error);
+      return [];
+    }
+  },
+
+  async create(groupData: Omit<EventGroup, 'id' | 'createdAt'>): Promise<EventGroup> {
+    try {
+      const { data, error } = await supabase
+        .from('event_groups')
+        .insert({
+          id: generateId('egrp_'),
+          big_event_id: groupData.bigEventId,
+          name: groupData.name,
+          description: groupData.description,
+          leader_id: groupData.leaderId,
+          member_ids: groupData.memberIds,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        description: data.description,
+        leaderId: data.leader_id,
+        memberIds: data.member_ids || [],
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error creating event group:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, groupData: Partial<EventGroup>): Promise<EventGroup> {
+    try {
+      const updateData: any = {};
+      if (groupData.name) updateData.name = groupData.name;
+      if (groupData.description !== undefined) updateData.description = groupData.description;
+      if (groupData.leaderId !== undefined) updateData.leader_id = groupData.leaderId;
+      if (groupData.memberIds) updateData.member_ids = groupData.memberIds;
+
+      const { data, error } = await supabase
+        .from('event_groups')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        description: data.description,
+        leaderId: data.leader_id,
+        memberIds: data.member_ids || [],
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error updating event group:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('event_groups')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting event group:', error);
+      throw error;
+    }
+  },
+};
+
+// Event Sponsors Service
+export const eventSponsorsService = {
+  async getByEventId(bigEventId?: string): Promise<EventSponsor[]> {
+    try {
+      let query = supabase
+        .from('event_sponsors')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (bigEventId) {
+        query = query.eq('big_event_id', bigEventId);
+      } else {
+        // Get reusable sponsors (global list)
+        query = query.is('big_event_id', null).eq('is_reusable', true);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data.map(sponsor => ({
+        id: sponsor.id,
+        bigEventId: sponsor.big_event_id,
+        name: sponsor.name,
+        phone: sponsor.phone,
+        email: sponsor.email,
+        address: sponsor.address,
+        sponsorType: sponsor.sponsor_type,
+        notes: sponsor.notes,
+        isReusable: sponsor.is_reusable,
+        createdAt: sponsor.created_at,
+      }));
+    } catch (error) {
+      console.error('Error fetching event sponsors:', error);
+      return [];
+    }
+  },
+
+  async create(sponsorData: Omit<EventSponsor, 'id' | 'createdAt'>): Promise<EventSponsor> {
+    try {
+      const { data, error } = await supabase
+        .from('event_sponsors')
+        .insert({
+          id: generateId('espo_'),
+          big_event_id: sponsorData.bigEventId,
+          name: sponsorData.name,
+          phone: sponsorData.phone,
+          email: sponsorData.email,
+          address: sponsorData.address,
+          sponsor_type: sponsorData.sponsorType,
+          notes: sponsorData.notes,
+          is_reusable: sponsorData.isReusable,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        sponsorType: data.sponsor_type,
+        notes: data.notes,
+        isReusable: data.is_reusable,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error creating event sponsor:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, sponsorData: Partial<EventSponsor>): Promise<EventSponsor> {
+    try {
+      const updateData: any = {};
+      if (sponsorData.name) updateData.name = sponsorData.name;
+      if (sponsorData.phone !== undefined) updateData.phone = sponsorData.phone;
+      if (sponsorData.email !== undefined) updateData.email = sponsorData.email;
+      if (sponsorData.address !== undefined) updateData.address = sponsorData.address;
+      if (sponsorData.sponsorType) updateData.sponsor_type = sponsorData.sponsorType;
+      if (sponsorData.notes !== undefined) updateData.notes = sponsorData.notes;
+      if (sponsorData.isReusable !== undefined) updateData.is_reusable = sponsorData.isReusable;
+
+      const { data, error } = await supabase
+        .from('event_sponsors')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        sponsorType: data.sponsor_type,
+        notes: data.notes,
+        isReusable: data.is_reusable,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error updating event sponsor:', error);
+      throw error;
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('event_sponsors')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting event sponsor:', error);
+      throw error;
+    }
+  },
+
+  // Copy reusable sponsor to specific event
+  async copyToEvent(sponsorId: string, bigEventId: string): Promise<EventSponsor> {
+    try {
+      // Get original sponsor
+      const { data: originalSponsor, error: fetchError } = await supabase
+        .from('event_sponsors')
+        .select('*')
+        .eq('id', sponsorId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Create copy for specific event
+      const { data, error } = await supabase
+        .from('event_sponsors')
+        .insert({
+          id: generateId('espo_'),
+          big_event_id: bigEventId,
+          name: originalSponsor.name,
+          phone: originalSponsor.phone,
+          email: originalSponsor.email,
+          address: originalSponsor.address,
+          sponsor_type: originalSponsor.sponsor_type,
+          notes: originalSponsor.notes,
+          is_reusable: false, // Copy is not reusable
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        bigEventId: data.big_event_id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        sponsorType: data.sponsor_type,
+        notes: data.notes,
+        isReusable: data.is_reusable,
+        createdAt: data.created_at,
+      };
+    } catch (error) {
+      console.error('Error copying sponsor to event:', error);
       throw error;
     }
   },

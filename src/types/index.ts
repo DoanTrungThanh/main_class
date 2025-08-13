@@ -232,6 +232,65 @@ export interface EventParticipant {
   notes?: string;
 }
 
+// Big Event types - Sự kiện lớn
+export interface BigEvent {
+  id: string;
+  name: string;
+  description?: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  organizerId: string;
+  createdAt: string;
+  // Danh sách tình nguyện viên riêng cho sự kiện
+  eventVolunteers: EventVolunteer[];
+  // Các ban/nhóm trong sự kiện
+  eventGroups: EventGroup[];
+  // Danh sách mạnh thường quân
+  sponsors: EventSponsor[];
+}
+
+// Tình nguyện viên trong sự kiện (khác với TNV hệ thống)
+export interface EventVolunteer {
+  id: string;
+  bigEventId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  role?: string;
+  notes?: string;
+  isSystemUser: boolean; // true nếu là user trong hệ thống
+  systemUserId?: string; // ID user trong hệ thống (nếu có)
+  createdAt: string;
+}
+
+// Ban/Nhóm trong sự kiện
+export interface EventGroup {
+  id: string;
+  bigEventId: string;
+  name: string;
+  description?: string;
+  leaderId?: string; // ID của trưởng ban
+  memberIds: string[]; // IDs của các thành viên (EventVolunteer IDs)
+  createdAt: string;
+}
+
+// Mạnh thường quân
+export interface EventSponsor {
+  id: string;
+  bigEventId?: string; // null nếu là sponsor chung, có giá trị nếu riêng cho sự kiện
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  sponsorType: 'individual' | 'organization'; // Cá nhân hoặc tổ chức
+  notes?: string;
+  isReusable: boolean; // true nếu có thể tái sử dụng cho sự kiện khác
+  createdAt: string;
+}
+
 // Activity Report types
 export interface ActivityReport {
   id: string;
@@ -266,5 +325,6 @@ export interface ClassInventoryItem {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  category_name?: string; // Thêm để hỗ trợ Excel import
 }
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getTodayVN, formatDateForInput } from '../utils/dateUtils';
-import { Student, Class, Schedule, Attendance, FinanceRecord, Asset, Notification, Classroom, GradePeriod, GradeColumn, Grade, Subject, Event, GradeBatch, AssetCategory, AssetDistribution, ActivityReport } from '../types';
+import { Student, Class, Schedule, Attendance, FinanceRecord, Asset, Notification, Classroom, GradePeriod, GradeColumn, Grade, Subject, Event, GradeBatch, AssetCategory, AssetDistribution, ActivityReport, BigEvent, EventVolunteer, EventGroup, EventSponsor } from '../types';
 import {
   studentsService,
   classesService,
@@ -18,6 +18,10 @@ import {
   activityReportsService,
   inventoryCategoriesService,
   classInventoryService,
+  bigEventsService,
+  eventVolunteersService,
+  eventGroupsService,
+  eventSponsorsService,
   type ClassInventoryItem,
   type InventoryCategory
 } from '../lib/supabaseService';
@@ -45,6 +49,7 @@ interface DataContextType {
   grades: Grade[];
   subjects: Subject[];
   events: Event[];
+  bigEvents: BigEvent[];
   gradeBatches: GradeBatch[];
   activityReports: ActivityReport[];
   classInventory: ClassInventoryItem[];
@@ -108,6 +113,28 @@ interface DataContextType {
   updateEvent: (id: string, event: Partial<Event>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
 
+  // Big Event operations
+  addBigEvent: (event: Omit<BigEvent, 'id' | 'createdAt' | 'eventVolunteers' | 'eventGroups' | 'sponsors'>) => Promise<BigEvent>;
+  updateBigEvent: (id: string, event: Partial<BigEvent>) => Promise<void>;
+  deleteBigEvent: (id: string) => Promise<void>;
+
+  // Event Volunteer operations
+  addEventVolunteer: (volunteer: Omit<EventVolunteer, 'id' | 'createdAt'>) => Promise<EventVolunteer>;
+  updateEventVolunteer: (id: string, volunteer: Partial<EventVolunteer>) => Promise<void>;
+  deleteEventVolunteer: (id: string) => Promise<void>;
+
+  // Event Group operations
+  addEventGroup: (group: Omit<EventGroup, 'id' | 'createdAt'>) => Promise<EventGroup>;
+  updateEventGroup: (id: string, group: Partial<EventGroup>) => Promise<void>;
+  deleteEventGroup: (id: string) => Promise<void>;
+
+  // Event Sponsor operations
+  addEventSponsor: (sponsor: Omit<EventSponsor, 'id' | 'createdAt'>) => Promise<EventSponsor>;
+  updateEventSponsor: (id: string, sponsor: Partial<EventSponsor>) => Promise<void>;
+  deleteEventSponsor: (id: string) => Promise<void>;
+  copyEventSponsorToEvent: (sponsorId: string, bigEventId: string) => Promise<EventSponsor>;
+  getReusableSponsors: () => Promise<EventSponsor[]>;
+
   // Activity Report operations
   addActivityReport: (reportData: Omit<ActivityReport, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateActivityReport: (id: string, reportData: Partial<ActivityReport>) => Promise<void>;
@@ -154,6 +181,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [bigEvents, setBigEvents] = useState<BigEvent[]>([]);
   const [gradeBatches, setGradeBatches] = useState<GradeBatch[]>([]);
   const [activityReports, setActivityReports] = useState<ActivityReport[]>([]);
   const [classInventory, setClassInventory] = useState<ClassInventoryItem[]>([]);
@@ -200,6 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         gradesData,
         subjectsData,
         eventsData,
+        bigEventsData,
         gradeBatchesData,
         assetsData,
         assetCategoriesData,
@@ -219,6 +248,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         gradesService.getAll(),
         subjectsService.getAll(),
         eventsService.getAll(),
+        bigEventsService.getAll(),
         gradeBatchesService.getAll(),
         loadAssets(),
         assetCategoriesService.getAll(),
@@ -239,6 +269,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setGrades(gradesData);
       setSubjects(subjectsData);
       setEvents(eventsData);
+      setBigEvents(bigEventsData);
       setGradeBatches(gradeBatchesData);
       setAssets(assetsData);
       setAssetCategories(assetCategoriesData);
@@ -1169,6 +1200,191 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Big Event operations
+  const addBigEvent = async (eventData: Omit<BigEvent, 'id' | 'createdAt' | 'eventVolunteers' | 'eventGroups' | 'sponsors'>): Promise<BigEvent> => {
+    try {
+      const newEvent = await bigEventsService.create(eventData);
+      setBigEvents(prev => [newEvent, ...prev]);
+      return newEvent;
+    } catch (error) {
+      console.error('Error adding big event:', error);
+      throw error;
+    }
+  };
+
+  const updateBigEvent = async (id: string, eventData: Partial<BigEvent>): Promise<void> => {
+    try {
+      const updatedEvent = await bigEventsService.update(id, eventData);
+      setBigEvents(prev => prev.map(event => event.id === id ? updatedEvent : event));
+    } catch (error) {
+      console.error('Error updating big event:', error);
+      throw error;
+    }
+  };
+
+  const deleteBigEvent = async (id: string): Promise<void> => {
+    try {
+      await bigEventsService.delete(id);
+      setBigEvents(prev => prev.filter(event => event.id !== id));
+    } catch (error) {
+      console.error('Error deleting big event:', error);
+      throw error;
+    }
+  };
+
+  // Event Volunteer operations
+  const addEventVolunteer = async (volunteerData: Omit<EventVolunteer, 'id' | 'createdAt'>): Promise<EventVolunteer> => {
+    try {
+      const newVolunteer = await eventVolunteersService.create(volunteerData);
+      // Update the big event with new volunteer
+      setBigEvents(prev => prev.map(event =>
+        event.id === volunteerData.bigEventId
+          ? { ...event, eventVolunteers: [...event.eventVolunteers, newVolunteer] }
+          : event
+      ));
+      return newVolunteer;
+    } catch (error) {
+      console.error('Error adding event volunteer:', error);
+      throw error;
+    }
+  };
+
+  const updateEventVolunteer = async (id: string, volunteerData: Partial<EventVolunteer>): Promise<void> => {
+    try {
+      const updatedVolunteer = await eventVolunteersService.update(id, volunteerData);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        eventVolunteers: event.eventVolunteers.map(vol => vol.id === id ? updatedVolunteer : vol)
+      })));
+    } catch (error) {
+      console.error('Error updating event volunteer:', error);
+      throw error;
+    }
+  };
+
+  const deleteEventVolunteer = async (id: string): Promise<void> => {
+    try {
+      await eventVolunteersService.delete(id);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        eventVolunteers: event.eventVolunteers.filter(vol => vol.id !== id)
+      })));
+    } catch (error) {
+      console.error('Error deleting event volunteer:', error);
+      throw error;
+    }
+  };
+
+  // Event Group operations
+  const addEventGroup = async (groupData: Omit<EventGroup, 'id' | 'createdAt'>): Promise<EventGroup> => {
+    try {
+      const newGroup = await eventGroupsService.create(groupData);
+      setBigEvents(prev => prev.map(event =>
+        event.id === groupData.bigEventId
+          ? { ...event, eventGroups: [...event.eventGroups, newGroup] }
+          : event
+      ));
+      return newGroup;
+    } catch (error) {
+      console.error('Error adding event group:', error);
+      throw error;
+    }
+  };
+
+  const updateEventGroup = async (id: string, groupData: Partial<EventGroup>): Promise<void> => {
+    try {
+      const updatedGroup = await eventGroupsService.update(id, groupData);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        eventGroups: event.eventGroups.map(group => group.id === id ? updatedGroup : group)
+      })));
+    } catch (error) {
+      console.error('Error updating event group:', error);
+      throw error;
+    }
+  };
+
+  const deleteEventGroup = async (id: string): Promise<void> => {
+    try {
+      await eventGroupsService.delete(id);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        eventGroups: event.eventGroups.filter(group => group.id !== id)
+      })));
+    } catch (error) {
+      console.error('Error deleting event group:', error);
+      throw error;
+    }
+  };
+
+  // Event Sponsor operations
+  const addEventSponsor = async (sponsorData: Omit<EventSponsor, 'id' | 'createdAt'>): Promise<EventSponsor> => {
+    try {
+      const newSponsor = await eventSponsorsService.create(sponsorData);
+      if (sponsorData.bigEventId) {
+        setBigEvents(prev => prev.map(event =>
+          event.id === sponsorData.bigEventId
+            ? { ...event, sponsors: [...event.sponsors, newSponsor] }
+            : event
+        ));
+      }
+      return newSponsor;
+    } catch (error) {
+      console.error('Error adding event sponsor:', error);
+      throw error;
+    }
+  };
+
+  const updateEventSponsor = async (id: string, sponsorData: Partial<EventSponsor>): Promise<void> => {
+    try {
+      const updatedSponsor = await eventSponsorsService.update(id, sponsorData);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        sponsors: event.sponsors.map(sponsor => sponsor.id === id ? updatedSponsor : sponsor)
+      })));
+    } catch (error) {
+      console.error('Error updating event sponsor:', error);
+      throw error;
+    }
+  };
+
+  const deleteEventSponsor = async (id: string): Promise<void> => {
+    try {
+      await eventSponsorsService.delete(id);
+      setBigEvents(prev => prev.map(event => ({
+        ...event,
+        sponsors: event.sponsors.filter(sponsor => sponsor.id !== id)
+      })));
+    } catch (error) {
+      console.error('Error deleting event sponsor:', error);
+      throw error;
+    }
+  };
+
+  const copyEventSponsorToEvent = async (sponsorId: string, bigEventId: string): Promise<EventSponsor> => {
+    try {
+      const copiedSponsor = await eventSponsorsService.copyToEvent(sponsorId, bigEventId);
+      setBigEvents(prev => prev.map(event =>
+        event.id === bigEventId
+          ? { ...event, sponsors: [...event.sponsors, copiedSponsor] }
+          : event
+      ));
+      return copiedSponsor;
+    } catch (error) {
+      console.error('Error copying sponsor to event:', error);
+      throw error;
+    }
+  };
+
+  const getReusableSponsors = async (): Promise<EventSponsor[]> => {
+    try {
+      return await eventSponsorsService.getByEventId(); // No eventId = get reusable sponsors
+    } catch (error) {
+      console.error('Error getting reusable sponsors:', error);
+      return [];
+    }
+  };
+
   const resetDatabase = () => {
     setStudents([]);
     setClasses([]);
@@ -1254,6 +1470,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       grades,
       subjects,
       events,
+      bigEvents,
       gradeBatches,
       activityReports,
       classInventory,
@@ -1296,6 +1513,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addEvent,
       updateEvent,
       deleteEvent,
+      addBigEvent,
+      updateBigEvent,
+      deleteBigEvent,
+      addEventVolunteer,
+      updateEventVolunteer,
+      deleteEventVolunteer,
+      addEventGroup,
+      updateEventGroup,
+      deleteEventGroup,
+      addEventSponsor,
+      updateEventSponsor,
+      deleteEventSponsor,
+      copyEventSponsorToEvent,
+      getReusableSponsors,
       addActivityReport,
       updateActivityReport,
       deleteActivityReport,

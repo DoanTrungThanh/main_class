@@ -84,7 +84,7 @@ export default function InventoryCategoryManager({ onClose, onCategoryAdded }: I
           name: formData.name,
           description: formData.description || null,
           color: formData.color,
-          created_by: user?.id || 'unknown'
+          created_by: null // Để null vì database schema cho phép và sẽ tự động xử lý
         });
         toast.success('Thêm danh mục thành công!');
       }

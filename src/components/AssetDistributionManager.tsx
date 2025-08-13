@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Calendar, User, Package, Download, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, X, Calendar, User, Package, Download, ArrowLeft, ChevronDown } from 'lucide-react';
 import { AssetDistribution } from '../types';
 import { assetDistributionsService } from '../lib/supabaseService';
 import { useToastContext } from '../context/ToastContext';
@@ -12,12 +12,18 @@ export default function AssetDistributionManager() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'returned'>('all');
+  const [itemSearchTerm, setItemSearchTerm] = useState(''); // Tìm kiếm trong modal
+  const [showItemList, setShowItemList] = useState(false); // Hiển thị danh sách items
+  const dropdownRef = useRef<HTMLDivElement>(null); // Ref cho dropdown
   const toast = useToastContext();
-  const { refreshData } = useData();
+  const { refreshData, assets, classInventory, inventoryCategories } = useData();
 
   const [formData, setFormData] = useState({
+    sourceType: 'asset' as 'asset' | 'inventory', // Nguồn: tài sản hoặc kho lớp
+    sourceId: '', // ID của item được chọn
     assetName: '',
     quantity: 1,
+    maxQuantity: 1, // Số lượng tối đa có thể phân phối
     assignedTo: '',
     distributedDate: new Date().toISOString().split('T')[0],
     notes: '',
@@ -26,6 +32,20 @@ export default function AssetDistributionManager() {
 
   useEffect(() => {
     loadDistributions();
+  }, []);
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowItemList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const loadDistributions = async () => {
@@ -43,22 +63,105 @@ export default function AssetDistributionManager() {
 
   const resetForm = () => {
     setFormData({
+      sourceType: 'asset',
+      sourceId: '',
       assetName: '',
       quantity: 1,
+      maxQuantity: 1,
       assignedTo: '',
       distributedDate: new Date().toISOString().split('T')[0],
       notes: '',
       status: 'active',
     });
     setEditingDistribution(null);
+    setItemSearchTerm('');
+    setShowItemList(false);
+  };
+
+  // Lấy danh sách items có thể phân phối
+  const getAvailableItems = () => {
+    if (formData.sourceType === 'asset') {
+      return assets.filter(asset => asset.status === 'available' && asset.quantity > 0);
+    } else {
+      return classInventory.filter(item => item.quantity > 0);
+    }
+  };
+
+  // Lọc items theo từ khóa tìm kiếm
+  const getFilteredItems = () => {
+    const items = getAvailableItems();
+
+    if (!itemSearchTerm) return items;
+
+    return items.filter(item => {
+      // Xử lý tên item khác nhau giữa asset và inventory
+      const itemName = formData.sourceType === 'asset'
+        ? (item.name || '')
+        : ((item as any).title || '');
+
+      // Xử lý category khác nhau giữa asset và inventory
+      let itemCategory = '';
+      if (formData.sourceType === 'asset') {
+        itemCategory = item.category || '';
+      } else {
+        // Với inventory, tìm tên category từ category_id
+        const categoryId = (item as any).category_id;
+        const category = inventoryCategories.find(cat => cat.id === categoryId);
+        itemCategory = category?.name || '';
+      }
+
+      const searchLower = itemSearchTerm.toLowerCase();
+      const nameMatch = itemName.toLowerCase().includes(searchLower);
+      const categoryMatch = itemCategory.toLowerCase().includes(searchLower);
+
+      return nameMatch || categoryMatch;
+    });
+  };
+
+  // Xử lý khi chọn item
+  const handleItemSelect = (itemId: string) => {
+    const availableItems = getAvailableItems();
+    const selectedItem = availableItems.find(item => item.id === itemId);
+
+    if (selectedItem) {
+      const itemName = formData.sourceType === 'asset'
+        ? (selectedItem.name || 'Không có tên')
+        : ((selectedItem as any).title || 'Không có tên');
+
+      setFormData(prev => ({
+        ...prev,
+        sourceId: itemId,
+        assetName: itemName,
+        maxQuantity: selectedItem.quantity || 0,
+        quantity: Math.min(prev.quantity, selectedItem.quantity || 0)
+      }));
+      setShowItemList(false);
+      setItemSearchTerm('');
+    }
+  };
+
+  // Xử lý khi thay đổi loại nguồn
+  const handleSourceTypeChange = (sourceType: 'asset' | 'inventory') => {
+    setFormData(prev => ({
+      ...prev,
+      sourceType,
+      sourceId: '',
+      assetName: '',
+      quantity: 1,
+      maxQuantity: 1
+    }));
   };
 
   const openModal = (distribution?: AssetDistribution) => {
     if (distribution) {
       setEditingDistribution(distribution);
+      // Khi edit, chỉ cho phép sửa thông tin phân phối, không đổi item
       setFormData({
+        sourceType: 'asset', // Mặc định, sẽ được xác định từ dữ liệu có sẵn
+        sourceId: distribution.assetId,
         assetName: distribution.assetName,
         quantity: distribution.quantity,
+        maxQuantity: distribution.quantity, // Khi edit, max = current quantity
         assignedTo: distribution.assignedTo,
         distributedDate: distribution.distributedDate,
         notes: distribution.notes || '',
@@ -77,28 +180,47 @@ export default function AssetDistributionManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.assetName.trim() || !formData.assignedTo.trim()) {
-      toast.error('Vui lòng nhập đầy đủ thông tin!');
+
+    // Validation
+    if (!formData.sourceId && !editingDistribution) {
+      toast.error('Vui lòng chọn tài sản/vật phẩm!');
+      return;
+    }
+
+    if (!formData.assignedTo.trim()) {
+      toast.error('Vui lòng nhập người được phân phối!');
+      return;
+    }
+
+    if (formData.quantity <= 0 || formData.quantity > formData.maxQuantity) {
+      toast.error(`Số lượng phải từ 1 đến ${formData.maxQuantity}!`);
       return;
     }
 
     try {
       setLoading(true);
-      
+
       const distributionData = {
-        ...formData,
-        assetId: `DIST_${Date.now()}`, // Generate a unique ID for distribution
+        assetId: editingDistribution ? editingDistribution.assetId : formData.sourceId,
+        assetName: formData.assetName,
+        quantity: formData.quantity,
+        assignedTo: formData.assignedTo.trim(),
+        distributedDate: formData.distributedDate,
+        notes: formData.notes.trim() || undefined,
+        status: formData.status,
       };
-      
+
       if (editingDistribution) {
         await assetDistributionsService.update(editingDistribution.id, distributionData);
         toast.success('Cập nhật phân phối thành công!');
       } else {
         await assetDistributionsService.create(distributionData);
         toast.success('Thêm phân phối thành công!');
+
+        // Cập nhật số lượng trong nguồn gốc
+        // TODO: Implement quantity update in source (asset or inventory)
       }
-      
+
       await loadDistributions();
       await refreshData();
       closeModal();
@@ -366,32 +488,152 @@ export default function AssetDistributionManager() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!editingDistribution && (
+                <>
+                  {/* Chọn nguồn */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nguồn phân phối *
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSourceTypeChange('asset')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          formData.sourceType === 'asset'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Package size={20} className="mx-auto mb-1" />
+                        <div className="text-sm font-medium">Tài sản nhận</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSourceTypeChange('inventory')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          formData.sourceType === 'inventory'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Package size={20} className="mx-auto mb-1" />
+                        <div className="text-sm font-medium">Kho lớp</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Chọn item */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Chọn {formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'} *
+                    </label>
+                    <div className="relative" ref={dropdownRef}>
+                      <div
+                        onClick={() => setShowItemList(!showItemList)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white flex justify-between items-center"
+                      >
+                        <span className={formData.assetName ? 'text-gray-900' : 'text-gray-500'}>
+                          {formData.assetName || `-- Chọn ${formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'} --`}
+                        </span>
+                        <svg className={`w-5 h-5 transition-transform ${showItemList ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+
+                      {showItemList && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                          <div className="p-2 border-b border-gray-200">
+                            <input
+                              type="text"
+                              placeholder={`Tìm kiếm ${formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'}...`}
+                              value={itemSearchTerm}
+                              onChange={(e) => setItemSearchTerm(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto">
+                            {getFilteredItems().length === 0 ? (
+                              <div className="p-3 text-gray-500 text-center">
+                                Không tìm thấy {formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'} nào
+                              </div>
+                            ) : (
+                              getFilteredItems().map(item => (
+                                <div
+                                  key={item.id}
+                                  onClick={() => handleItemSelect(item.id)}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium text-gray-900">
+                                    {formData.sourceType === 'asset' ? (item.name || 'Không có tên') : ((item as any).title || 'Không có tên')}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {(() => {
+                                      let categoryName = '';
+                                      if (formData.sourceType === 'asset') {
+                                        categoryName = item.category || '';
+                                      } else {
+                                        const categoryId = (item as any).category_id;
+                                        const category = inventoryCategories.find(cat => cat.id === categoryId);
+                                        categoryName = category?.name || '';
+                                      }
+                                      return categoryName && <span className="mr-2">Danh mục: {categoryName}</span>;
+                                    })()}
+                                    <span>Số lượng: {item.quantity || 0}</span>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Tên item (readonly khi chọn từ dropdown, editable khi edit) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên tài sản *
+                  Tên {formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'} *
                 </label>
                 <input
                   type="text"
                   value={formData.assetName}
                   onChange={(e) => setFormData({ ...formData, assetName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập tên tài sản..."
+                  placeholder={`Nhập tên ${formData.sourceType === 'asset' ? 'tài sản' : 'vật phẩm'}...`}
+                  readOnly={!editingDistribution && formData.sourceId !== ''}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Số lượng *
+                  Số lượng * {formData.maxQuantity > 1 && (
+                    <span className="text-sm text-gray-500">(Tối đa: {formData.maxQuantity})</span>
+                  )}
                 </label>
                 <input
                   type="number"
                   min="1"
+                  max={formData.maxQuantity}
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 1;
+                    setFormData({
+                      ...formData,
+                      quantity: Math.min(value, formData.maxQuantity)
+                    });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
+                {formData.maxQuantity > 1 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Số lượng có sẵn: {formData.maxQuantity}
+                  </p>
+                )}
               </div>
 
               <div>

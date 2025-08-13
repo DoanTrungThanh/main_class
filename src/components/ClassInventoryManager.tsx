@@ -5,6 +5,8 @@ import { useData } from '../context/DataContext';
 import { classInventoryService } from '../lib/supabaseService';
 import { hasPermission, getEffectivePermissions } from '../constants/permissions';
 import InventoryCategoryManager from './InventoryCategoryManager';
+import ExcelUploadModal from './ExcelUploadModal';
+import { excelService } from '../services/excelService';
 import {
   Package,
   Plus,
@@ -27,7 +29,10 @@ import {
   TrendingDown,
   BarChart3,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Upload,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface ClassInventoryItem {
@@ -60,6 +65,7 @@ export default function ClassInventoryManager() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showExcelUpload, setShowExcelUpload] = useState(false);
   const [editingItem, setEditingItem] = useState<ClassInventoryItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -73,14 +79,14 @@ export default function ClassInventoryManager() {
     description: ''
   });
 
-  // Helper function to sanitize text input
+  // Helper function to sanitize text input (chỉ dùng khi submit)
   const sanitizeText = (text: string): string => {
     if (!text) return '';
-    // Remove null bytes and other problematic characters
+    // Remove null bytes and other problematic characters, nhưng giữ lại khoảng cách
     return text
       .replace(/\u0000/g, '') // Remove null bytes
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
-      .trim();
+      .trim(); // Chỉ trim khi submit, không trim khi đang nhập
   };
 
   // Check permissions
@@ -399,7 +405,7 @@ export default function ClassInventoryManager() {
           quantity: formData.quantity,
           category_id: formData.category_id,
           description: formData.description ? sanitizeText(formData.description) : null,
-          created_by: user?.id || null
+          // Không gửi created_by vì database mong đợi UUID nhưng user.id là custom format
         };
 
         console.log('📤 Create data:', createData);
@@ -440,6 +446,28 @@ export default function ClassInventoryManager() {
     });
     setEditingItem(null);
     setShowForm(false);
+  };
+
+  // Handle Excel export
+  const handleExportExcel = async () => {
+    try {
+      await excelService.exportCurrentData(classInventory, inventoryCategories);
+      toast.success('Xuất Excel thành công!');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Lỗi khi xuất Excel');
+    }
+  };
+
+  // Handle Excel template download
+  const handleDownloadTemplate = async () => {
+    try {
+      await excelService.downloadTemplate();
+      toast.success('Tải file mẫu thành công!');
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast.error('Lỗi khi tải file mẫu');
+    }
   };
 
   // Handle edit
@@ -594,6 +622,35 @@ export default function ClassInventoryManager() {
                 Thêm vật phẩm
               </button>
             )}
+
+            {/* Excel Actions */}
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={handleDownloadTemplate}
+                className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2 text-sm"
+              >
+                <FileSpreadsheet size={14} />
+                Tải mẫu Excel
+              </button>
+
+              {canCreate && (
+                <button
+                  onClick={() => setShowExcelUpload(true)}
+                  className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center gap-2 text-sm"
+                >
+                  <Upload size={14} />
+                  Import Excel
+                </button>
+              )}
+
+              <button
+                onClick={handleExportExcel}
+                className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-all flex items-center gap-2 text-sm"
+              >
+                <Download size={14} />
+                Xuất Excel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -626,7 +683,7 @@ export default function ClassInventoryManager() {
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: sanitizeText(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Nhập tên vật phẩm"
                   required
@@ -670,7 +727,7 @@ export default function ClassInventoryManager() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: sanitizeText(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
                   placeholder="Mô tả chi tiết về vật phẩm"
@@ -703,6 +760,17 @@ export default function ClassInventoryManager() {
         <InventoryCategoryManager
           onClose={() => setShowCategoryManager(false)}
           onCategoryAdded={() => refreshData()}
+        />
+      )}
+
+      {/* Excel Upload Modal */}
+      {showExcelUpload && (
+        <ExcelUploadModal
+          onClose={() => setShowExcelUpload(false)}
+          onSuccess={() => {
+            setShowExcelUpload(false);
+            refreshData();
+          }}
         />
       )}
     </div>
