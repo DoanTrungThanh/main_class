@@ -99,10 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // Clear any invalid session data
         localStorage.removeItem('user_session');
-          localStorage.removeItem('user');
-        }
+        localStorage.removeItem('user');
       }
-      
+
       await loadUsers();
       setIsLoading(false);
     };
@@ -114,92 +113,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadUsers();
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
-    
+
     try {
-      // Try to authenticate with Supabase first
-      const foundUser = await usersService.authenticate(email, password);
-      
-      if (foundUser && foundUser.isActive) {
-        // Đảm bảo user có permissions đúng với role
-        const defaultPermissions = getPermissionsByRole(foundUser.role);
-        const userPermissions = foundUser.permissions && foundUser.permissions.length > 0
-          ? foundUser.permissions
-          : defaultPermissions;
+      // Use new AuthService for secure authentication
+      const result = await authService.login(email, password);
 
-        // Update last login
-        const updatedUser = {
-          ...foundUser,
-          lastLogin: new Date().toISOString(),
-          permissions: userPermissions
-        };
-
-        await usersService.update(foundUser.id, {
-          lastLogin: updatedUser.lastLogin,
-          permissions: userPermissions
-        });
-
-        setUser(updatedUser);
-        setUsers(prev => prev.map(u => u.id === foundUser.id ? updatedUser : u));
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (result.success && result.user) {
+        setUser(result.user);
+        // Refresh users list to get updated last login
+        await loadUsers();
         setIsLoading(false);
-        return true;
-      }
-      
-      // Fallback to local users if Supabase fails
-      const localUser = users.find(u => u.email === email && u.isActive);
-      if (localUser && localUser.password === password) {
-        // Đảm bảo user có permissions đúng với role
-        const defaultPermissions = getPermissionsByRole(localUser.role);
-        const userPermissions = localUser.permissions && localUser.permissions.length > 0
-          ? localUser.permissions
-          : defaultPermissions;
-
-        const updatedUser = {
-          ...localUser,
-          lastLogin: new Date().toISOString(),
-          permissions: userPermissions
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        return { success: true };
+      } else {
         setIsLoading(false);
-        return true;
+        return { success: false, error: result.error || 'Đăng nhập thất bại' };
       }
-      
-      setIsLoading(false);
-      return false;
     } catch (error) {
       console.error('Login error:', error);
-      
-      // Fallback to local authentication
-      const localUser = users.find(u => u.email === email && u.isActive);
-      if (localUser && localUser.password === password) {
-        // Đảm bảo user có permissions đúng với role
-        const defaultPermissions = getPermissionsByRole(localUser.role);
-        const userPermissions = localUser.permissions && localUser.permissions.length > 0
-          ? localUser.permissions
-          : defaultPermissions;
-
-        const updatedUser = {
-          ...localUser,
-          lastLogin: new Date().toISOString(),
-          permissions: userPermissions
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setIsLoading(false);
-        return true;
-      }
-      
       setIsLoading(false);
-      return false;
+      return { success: false, error: 'Có lỗi xảy ra khi đăng nhập' };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
-    localStorage.removeItem('user');
   };
 
   const addUser = async (userData: Omit<User, 'id' | 'createdAt'>) => {
@@ -245,30 +185,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const changePassword = async (userId: string, newPassword: string) => {
-    try {
-      await usersService.update(userId, { password: newPassword });
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, password: newPassword } : u
-      ));
-    } catch (error) {
-      console.error('Error changing password:', error);
-      throw error;
-    }
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    return await authService.changePassword(currentPassword, newPassword);
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    return authService.hasPermission(permission);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      users, 
-      login, 
-      logout, 
-      isLoading, 
-      addUser, 
-      updateUser, 
-      deleteUser, 
+    <AuthContext.Provider value={{
+      user,
+      users,
+      login,
+      logout,
+      isLoading,
+      addUser,
+      updateUser,
+      deleteUser,
       changePassword,
       refreshUsers,
+      hasPermission,
     }}>
       {children}
     </AuthContext.Provider>
