@@ -92,18 +92,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Validate existing session
-      const validatedUser = await authService.validateSession();
-      if (validatedUser) {
-        setUser(validatedUser);
-      } else {
-        // Clear any invalid session data
-        localStorage.removeItem('user_session');
-        localStorage.removeItem('user');
-      }
+      try {
+        // Validate existing session
+        const validatedUser = await authService.validateSession();
+        if (validatedUser) {
+          setUser(validatedUser);
+        } else {
+          // Clear any invalid session data
+          localStorage.removeItem('user_session');
+          localStorage.removeItem('user');
+        }
 
-      await loadUsers();
-      setIsLoading(false);
+        // Load users
+        await loadUsers();
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initAuth();
