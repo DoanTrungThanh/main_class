@@ -402,7 +402,7 @@ export default function PublicIndexPage({ onLoginClick }: PublicIndexPageProps) 
                     alt={item.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = `https://via.placeholder.com/400x300/e5e7eb/6b7280?text=${encodeURIComponent(item.title)}`;
+                      e.currentTarget.src = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#e5e7eb"/><text x="200" y="150" text-anchor="middle" dy="0.3em" fill="#6b7280" font-family="Arial" font-size="16">${item.title}</text></svg>`)}`;
                     }}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all duration-300"></div>

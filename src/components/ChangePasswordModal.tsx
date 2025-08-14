@@ -127,6 +127,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                autoComplete="current-password"
                 required
                 disabled={isLoading}
               />
@@ -151,6 +152,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                autoComplete="new-password"
                 required
                 disabled={isLoading}
               />
@@ -225,6 +227,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                     ? 'border-red-300 focus:ring-red-500'
                     : 'border-gray-300'
                 }`}
+                autoComplete="new-password"
                 required
                 disabled={isLoading}
               />

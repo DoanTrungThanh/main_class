@@ -1,5 +1,16 @@
 import { supabase } from './supabase';
 import { User } from '../types';
+import { usersService } from './supabaseService';
+
+// Types for session storage
+type SessionData = {
+  id: string;
+  email: string;
+  role: User['role'];
+  name: string;
+  loginTime: number;
+  authProvider: 'supabase' | 'local';
+};
 
 // 🔐 Secure Authentication Service
 export class AuthService {
@@ -34,71 +45,76 @@ export class AuthService {
         return { success: false, error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' };
       }
 
-      // Try Supabase authentication first
-      let userProfile = null;
+      // 1) Try authenticate with Supabase Auth first
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      if (!error && data.user) {
+        // Get user profile from database
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .eq('is_active', true)
+          .single();
 
-        if (!error && data.user) {
-          // Get user profile from database
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .eq('is_active', true)
-            .single();
-
-          if (!profileError && profile) {
-            userProfile = profile;
-          }
+        if (profileError || !userProfile) {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Tài khoản không tồn tại hoặc đã bị vô hiệu hóa' };
         }
-      } catch (supabaseError) {
-        console.log('Supabase auth failed, trying local auth:', supabaseError);
-      }
 
-      // Fallback to local authentication if Supabase fails
-      if (!userProfile) {
-        userProfile = await this.tryLocalAuthentication(email, password);
-      }
-
-      if (!userProfile) {
-        this.recordFailedLogin(email);
-        return { success: false, error: 'Email hoặc mật khẩu không đúng' };
-      }
-
-      // Update last login (try Supabase, fallback to local)
-      try {
+        // Update last login
         await supabase
           .from('users')
           .update({ last_login: new Date().toISOString() })
           .eq('id', userProfile.id);
-      } catch (error) {
-        console.log('Could not update last login in Supabase:', error);
-        // Update local user data
-        userProfile.last_login = new Date().toISOString();
+
+        // Set up session
+        this.currentUser = userProfile;
+        this.setupSessionTimeout();
+        this.clearFailedLogins(email);
+
+        const sessionData: SessionData = {
+          id: userProfile.id,
+          email: userProfile.email,
+          role: userProfile.role,
+          name: userProfile.name,
+          loginTime: Date.now(),
+          authProvider: 'supabase',
+        };
+        localStorage.setItem('user_session', JSON.stringify(sessionData));
+        return { success: true, user: userProfile };
       }
 
-      // Set up session
-      this.currentUser = userProfile;
-      this.setupSessionTimeout();
-      this.clearFailedLogins(email);
+      // 2) Fallback to local users table (for legacy/default accounts)
+      const localUser = await usersService.authenticate(email, password);
+      if (localUser) {
+        // Update last login
+        await supabase
+          .from('users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', localUser.id);
 
-      // Store session securely (without sensitive data)
-      const sessionData = {
-        id: userProfile.id,
-        email: userProfile.email,
-        role: userProfile.role,
-        name: userProfile.name,
-        loginTime: Date.now()
-      };
-      
-      localStorage.setItem('user_session', JSON.stringify(sessionData));
+        this.currentUser = localUser;
+        this.setupSessionTimeout();
+        this.clearFailedLogins(email);
 
-      return { success: true, user: userProfile };
+        const sessionData: SessionData = {
+          id: localUser.id,
+          email: localUser.email,
+          role: localUser.role,
+          name: localUser.name,
+          loginTime: Date.now(),
+          authProvider: 'local',
+        };
+        localStorage.setItem('user_session', JSON.stringify(sessionData));
+        return { success: true, user: localUser };
+      }
+
+      this.recordFailedLogin(email);
+      return { success: false, error: 'Email hoặc mật khẩu không đúng' };
 
     } catch (error) {
       console.error('Login error:', error);
@@ -125,15 +141,43 @@ export class AuthService {
       const sessionData = localStorage.getItem('user_session');
       if (!sessionData) return null;
 
-      const session = JSON.parse(sessionData);
-      
+      const session: SessionData = JSON.parse(sessionData);
+
       // Check session expiry
       if (Date.now() - session.loginTime > this.SESSION_DURATION) {
         await this.logout();
         return null;
       }
 
-      // Validate with Supabase
+      if (session.authProvider === 'local') {
+        // Validate user from DB if available, else fallback to session data
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        const finalUser: User | null = userProfile || {
+          id: session.id,
+          email: session.email,
+          name: session.name,
+          role: session.role,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+        } as User;
+
+        if (!finalUser) {
+          await this.logout();
+          return null;
+        }
+
+        this.currentUser = finalUser;
+        this.setupSessionTimeout();
+        return finalUser;
+      }
+
+      // Validate with Supabase for Supabase sessions
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         await this.logout();
@@ -175,6 +219,20 @@ export class AuthService {
       const passwordValidation = this.validatePasswordStrength(newPassword);
       if (!passwordValidation.isValid) {
         return { success: false, error: passwordValidation.message };
+      }
+
+      // Detect auth provider
+      const sessionData = localStorage.getItem('user_session');
+      const session: SessionData | null = sessionData ? JSON.parse(sessionData) : null;
+
+      if (session?.authProvider === 'local') {
+        // Update password in users table
+        const { error } = await supabase
+          .from('users')
+          .update({ password: newPassword })
+          .eq('id', this.currentUser.id);
+        if (error) return { success: false, error: 'Không thể đổi mật khẩu.' };
+        return { success: true };
       }
 
       // Update password in Supabase Auth
@@ -281,65 +339,7 @@ export class AuthService {
     return this.currentUser.permissions?.includes(permission) || false;
   }
 
-  // 🏠 Local authentication fallback
-  private async tryLocalAuthentication(email: string, password: string): Promise<User | null> {
-    // Default demo users for development
-    const defaultUsers = [
-      {
-        id: '1',
-        name: 'Admin User',
-        email: 'admin@school.com',
-        role: 'admin' as const,
-        createdAt: '2024-01-01',
-        password: 'password',
-        isActive: true,
-        lastLogin: new Date().toISOString(),
-        gender: 'male' as const,
-        permissions: [],
-      },
-      {
-        id: '2',
-        name: 'Manager User',
-        email: 'manager@school.com',
-        role: 'manager' as const,
-        createdAt: '2024-01-01',
-        password: 'password',
-        isActive: true,
-        lastLogin: '2024-01-15T10:30:00Z',
-        gender: 'male' as const,
-        permissions: [],
-      },
-      {
-        id: '3',
-        name: 'Cô Bích Thu',
-        email: 'teacher@school.com',
-        role: 'teacher' as const,
-        createdAt: '2024-01-01',
-        password: 'password',
-        isActive: true,
-        lastLogin: '2024-01-14T14:20:00Z',
-        gender: 'female' as const,
-        permissions: [],
-      },
-    ];
 
-    // Find user by email and password
-    const user = defaultUsers.find(u =>
-      u.email === email &&
-      u.password === password &&
-      u.isActive
-    );
-
-    if (user) {
-      console.log('✅ Local authentication successful for:', email);
-      return {
-        ...user,
-        lastLogin: new Date().toISOString()
-      };
-    }
-
-    return null;
-  }
 }
 
 // Export singleton instance

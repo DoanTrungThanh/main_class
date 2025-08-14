@@ -75,6 +75,9 @@ export default function EventManager() {
     participantIds: [] as string[],
   });
 
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
+
   const [bigEventFormData, setBigEventFormData] = useState({
     name: '',
     description: '',
@@ -99,7 +102,7 @@ export default function EventManager() {
                          (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || event.status === filterStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -120,7 +123,7 @@ export default function EventManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const eventData = {
         ...formData,
@@ -134,7 +137,7 @@ export default function EventManager() {
         await addEvent(eventData);
         toast.success('Tạo sự kiện thành công!');
       }
-      
+
       setShowModal(false);
       resetForm();
     } catch (error) {
@@ -228,10 +231,10 @@ export default function EventManager() {
     const ws = XLSX.utils.json_to_sheet(participantData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Danh sách tham dự');
-    
+
     const fileName = `Danh_sach_tham_du_${event.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
+
     toast.success('Xuất danh sách thành công!');
   };
 
@@ -241,6 +244,9 @@ export default function EventManager() {
   };
 
   const availableStudents = getAvailableStudents();
+  const filteredAvailableStudents = availableStudents.filter(s =>
+    s.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
+  );
 
   // Kiểm tra quyền xem sự kiện
   if (!canViewEvents) {
@@ -330,7 +336,7 @@ export default function EventManager() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
@@ -384,19 +390,19 @@ export default function EventManager() {
                     {new Date(event.eventDate).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock size={16} />
                   <span className="text-sm">{event.startTime} - {event.endTime}</span>
                 </div>
-                
+
                 {event.location && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <MapPin size={16} />
                     <span className="text-sm">{event.location}</span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-2 text-gray-600">
                   <Users size={16} />
                   <span className="text-sm">
@@ -410,7 +416,7 @@ export default function EventManager() {
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
                   {getStatusLabel(event.status)}
                 </span>
-                
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => showParticipants(event)}
@@ -420,7 +426,7 @@ export default function EventManager() {
                     <User size={14} />
                     Danh sách
                   </button>
-                  
+
                   <button
                     onClick={() => exportParticipants(event)}
                     className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
@@ -439,8 +445,8 @@ export default function EventManager() {
           <div className="text-center py-8">
             <Calendar className="mx-auto mb-4 text-gray-300" size={48} />
             <p className="text-gray-500">
-              {searchTerm || filterStatus !== 'all' 
-                ? 'Không tìm thấy sự kiện nào' 
+              {searchTerm || filterStatus !== 'all'
+                ? 'Không tìm thấy sự kiện nào'
                 : 'Chưa có sự kiện nào'}
             </p>
           </div>
@@ -771,31 +777,45 @@ export default function EventManager() {
                   Chọn học sinh tham gia ({formData.participantIds.length} học sinh)
                 </label>
 
-                <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-                  {availableStudents.length > 0 ? (
-                    <div className="space-y-2">
-                      {availableStudents.map((student) => (
-                        <label key={student.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.participantIds.includes(student.id)}
-                            onChange={() => handleParticipantToggle(student.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{student.name}</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(student.birthDate).toLocaleDateString('vi-VN')} - {student.parentName}
-                            </p>
-                          </div>
-                        </label>
-                      ))}
+                <div className="border border-gray-300 rounded-lg">
+                  <div className="p-2 border-b bg-gray-50 sticky top-0 z-10">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        type="text"
+                        value={studentSearchTerm}
+                        onChange={(e) => setStudentSearchTerm(e.target.value)}
+                        placeholder="Tìm nhanh theo tên học sinh..."
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-4">
-                      Không có học sinh khả dụng
-                    </p>
-                  )}
+                  </div>
+                  <div className="p-2 max-h-56 overflow-y-auto">
+                    {filteredAvailableStudents.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {filteredAvailableStudents.map((student) => (
+                          <label key={student.id} className="flex items-center gap-3 p-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.participantIds.includes(student.id)}
+                              onChange={() => handleParticipantToggle(student.id)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 leading-5">{student.name}</p>
+                              <p className="text-xs text-gray-600">
+                                {new Date(student.birthDate).toLocaleDateString('vi-VN')} • {student.parentName}
+                              </p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4 text-sm">
+                        {studentSearchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Không có học sinh khả dụng'}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Chỉ hiển thị học sinh đang học

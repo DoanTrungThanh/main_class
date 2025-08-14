@@ -266,7 +266,7 @@ export default function PublicPageEditor() {
                                   alt={item.title || 'Gallery image'}
                                   className="w-32 h-24 object-cover rounded-lg border border-gray-200"
                                   onError={(e) => {
-                                    e.currentTarget.src = `https://via.placeholder.com/128x96/e5e7eb/6b7280?text=Error`;
+                                    e.currentTarget.src = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96"><rect width="128" height="96" fill="#e5e7eb"/><text x="64" y="48" text-anchor="middle" dy="0.3em" fill="#6b7280" font-family="Arial" font-size="12">Error</text></svg>')}`;
                                   }}
                                 />
                               </div>
@@ -491,7 +491,7 @@ export default function PublicPageEditor() {
                           alt={item.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = `https://via.placeholder.com/200x80/e5e7eb/6b7280?text=${encodeURIComponent(item.title)}`;
+                            e.currentTarget.src = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80" viewBox="0 0 200 80"><rect width="200" height="80" fill="#e5e7eb"/><text x="100" y="40" text-anchor="middle" dy="0.3em" fill="#6b7280" font-family="Arial" font-size="12">${item.title}</text></svg>`)}`;
                           }}
                         />
                       </div>

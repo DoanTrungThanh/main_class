@@ -3,13 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Debug logging (only in development)
-if (import.meta.env.DEV) {
-  console.log('🔍 Supabase Configuration Debug:');
-  console.log('URL:', supabaseUrl ? 'Set' : 'Not set');
-  console.log('Key exists:', !!supabaseAnonKey);
-}
-
 // Check if environment variables are properly configured
 const isValidUrl = (url: string) => {
   try {
@@ -26,25 +19,47 @@ const hasValidCredentials = supabaseUrl &&
   supabaseAnonKey !== 'your_supabase_anon_key' &&
   isValidUrl(supabaseUrl);
 
-console.log('✅ Valid credentials:', hasValidCredentials);
+// Mock client for demo purposes
+const createMockClient = () => {
+  const mockResponse = {
+    data: null,
+    error: null,
+    status: 200,
+    statusText: 'OK'
+  };
 
-if (!hasValidCredentials) {
-  console.warn('❌ Supabase credentials not configured. Please set up your environment variables.');
-  console.log('Debug info:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    urlValid: supabaseUrl ? isValidUrl(supabaseUrl) : false,
-    urlNotPlaceholder: supabaseUrl !== 'your_supabase_project_url',
-    keyNotPlaceholder: supabaseAnonKey !== 'your_supabase_anon_key'
-  });
-} else {
-  console.log('✅ Supabase client initialized successfully');
-}
+  return {
+    auth: {
+      signInWithPassword: () => Promise.resolve(mockResponse),
+      signOut: () => Promise.resolve(mockResponse),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.resolve(mockResponse),
+      insert: () => Promise.resolve(mockResponse),
+      update: () => Promise.resolve(mockResponse),
+      delete: () => Promise.resolve(mockResponse),
+      eq: function() { return this; },
+      order: function() { return this; },
+      limit: function() { return this; }
+    })
+  };
+};
 
-// Create a mock client or real client based on credentials
+// Create client - use mock if credentials not configured
 export const supabase = hasValidCredentials
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : createClient('https://placeholder.supabase.co', 'placeholder-key');
+  : createMockClient();
+
+// Log configuration status
+if (import.meta.env.DEV) {
+  if (hasValidCredentials) {
+    console.log('✅ Supabase client initialized successfully');
+  } else {
+    console.log('🔧 Using mock Supabase client for demo (credentials not configured)');
+  }
+}
 
 // Database types
 export type Database = {
