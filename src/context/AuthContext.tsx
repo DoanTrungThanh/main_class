@@ -2,18 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types';
 import { usersService } from '../lib/supabaseService';
 import { getPermissionsByRole } from '../constants/permissions';
+import { authService } from '../lib/authService';
 
 interface AuthContextType {
   user: User | null;
   users: User[];
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isLoading: boolean;
   addUser: (userData: Omit<User, 'id' | 'createdAt'>) => Promise<void>;
   updateUser: (id: string, userData: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
-  changePassword: (userId: string, newPassword: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   refreshUsers: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,14 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Check for saved user session
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error('Error parsing saved user:', error);
+      // Validate existing session
+      const validatedUser = await authService.validateSession();
+      if (validatedUser) {
+        setUser(validatedUser);
+      } else {
+        // Clear any invalid session data
+        localStorage.removeItem('user_session');
           localStorage.removeItem('user');
         }
       }

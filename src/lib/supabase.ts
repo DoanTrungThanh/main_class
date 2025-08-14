@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aejdkzhzrskwesaarwuh.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlamRremh6cnNrd2VzYWFyd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1MjExNDIsImV4cCI6MjA2NzA5NzE0Mn0.P1vb7-l_0dSruUgPgUTuNgpQU5PLbrt2f2PjHv-uQ8c';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Debug logging
-console.log('🔍 Supabase Configuration Debug:');
-console.log('URL:', supabaseUrl);
-console.log('Key exists:', !!supabaseAnonKey);
-console.log('Key length:', supabaseAnonKey?.length);
+// Debug logging (only in development)
+if (import.meta.env.DEV) {
+  console.log('🔍 Supabase Configuration Debug:');
+  console.log('URL:', supabaseUrl ? 'Set' : 'Not set');
+  console.log('Key exists:', !!supabaseAnonKey);
+}
 
 // Check if environment variables are properly configured
 const isValidUrl = (url: string) => {
