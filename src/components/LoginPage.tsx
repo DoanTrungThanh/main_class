@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToastContext } from '../context/ToastContext';
-import DemoLoginInfo from './DemoLoginInfo';
 import {
   Eye,
   EyeOff,
   LogIn,
   ArrowLeft,
+
 } from 'lucide-react';
+
 
 interface LoginPageProps {
   onBackClick?: () => void;
@@ -42,26 +43,24 @@ export default function LoginPageFixed({ onBackClick }: LoginPageProps) {
     }
   };
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full">
-        {/* Demo Login Info */}
-        <DemoLoginInfo />
-        
-        <div className="max-w-md mx-auto">
-          {/* Back Button */}
-          {onBackClick && (
-            <button
-              onClick={onBackClick}
-              className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft size={20} />
-              <span>Quay lại trang chính</span>
-            </button>
-          )}
+      <div className="max-w-md w-full">
+        {/* Back Button */}
+        {onBackClick && (
+          <button
+            onClick={onBackClick}
+            className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span>Quay lại trang chính</span>
+          </button>
+        )}
 
-          {/* Login Form */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        {/* Login Form */}
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Đăng nhập</h2>
               <p className="text-gray-600">Vui lòng đăng nhập để tiếp tục</p>
@@ -78,6 +77,7 @@ export default function LoginPageFixed({ onBackClick }: LoginPageProps) {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   placeholder="Nhập email của bạn"
+                  autoComplete="email"
                   required
                   disabled={isLoading}
                 />
@@ -94,6 +94,7 @@ export default function LoginPageFixed({ onBackClick }: LoginPageProps) {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     placeholder="Nhập mật khẩu"
+                    autoComplete="current-password"
                     required
                     disabled={isLoading}
                   />
@@ -125,8 +126,9 @@ export default function LoginPageFixed({ onBackClick }: LoginPageProps) {
                   </>
                 )}
               </button>
-            </form>
-          </div>
+
+
+          </form>
         </div>
       </div>
     </div>
