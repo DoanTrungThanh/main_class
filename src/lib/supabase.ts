@@ -28,6 +28,47 @@ const createMockClient = () => {
     statusText: 'OK'
   };
 
+  // Create a mock query builder that supports chaining
+  const createMockQueryBuilder = () => {
+    const queryBuilder = {
+      select: () => queryBuilder,
+      insert: () => queryBuilder,
+      update: () => queryBuilder,
+      delete: () => queryBuilder,
+      eq: () => queryBuilder,
+      neq: () => queryBuilder,
+      gt: () => queryBuilder,
+      gte: () => queryBuilder,
+      lt: () => queryBuilder,
+      lte: () => queryBuilder,
+      like: () => queryBuilder,
+      ilike: () => queryBuilder,
+      is: () => queryBuilder,
+      in: () => queryBuilder,
+      contains: () => queryBuilder,
+      containedBy: () => queryBuilder,
+      rangeGt: () => queryBuilder,
+      rangeGte: () => queryBuilder,
+      rangeLt: () => queryBuilder,
+      rangeLte: () => queryBuilder,
+      rangeAdjacent: () => queryBuilder,
+      overlaps: () => queryBuilder,
+      textSearch: () => queryBuilder,
+      match: () => queryBuilder,
+      not: () => queryBuilder,
+      or: () => queryBuilder,
+      filter: () => queryBuilder,
+      order: () => queryBuilder,
+      limit: () => queryBuilder,
+      range: () => queryBuilder,
+      abortSignal: () => queryBuilder,
+      single: () => Promise.resolve(mockResponse),
+      maybeSingle: () => Promise.resolve(mockResponse),
+      then: (resolve: any) => Promise.resolve(mockResponse).then(resolve),
+      catch: (reject: any) => Promise.resolve(mockResponse).catch(reject)
+    };
+    return queryBuilder;
+  };
   return {
     auth: {
       signInWithPassword: () => Promise.resolve(mockResponse),
@@ -35,15 +76,7 @@ const createMockClient = () => {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
     },
-    from: () => ({
-      select: () => Promise.resolve(mockResponse),
-      insert: () => Promise.resolve(mockResponse),
-      update: () => Promise.resolve(mockResponse),
-      delete: () => Promise.resolve(mockResponse),
-      eq: function() { return this; },
-      order: function() { return this; },
-      limit: function() { return this; }
-    })
+    from: () => createMockQueryBuilder()
   };
 };
 
